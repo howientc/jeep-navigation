@@ -26,7 +26,7 @@ class TestSimulatedTopology(unittest.TestCase):
                 row = self.top.height - y - 1  # row is reversed from y
                 self.assertEqual(TEST_MAP[row][x], self.top.get_z(Point2D(x, y)))
 
-    def test_negX(self):
+    def test_neg_x(self):
         """
         make sure we get -1 when off to left
         :return:

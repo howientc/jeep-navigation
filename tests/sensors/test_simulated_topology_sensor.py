@@ -19,16 +19,16 @@ class TestSimulatedTopologySensor(unittest.TestCase):
         self.sensor = SimulatedTopologySensor(topology, topology_map=TopologyMap())
 
     def test_normal(self):
-        self.assertEqual([[1, 1, 2], [1, 2, 3], [1, 2, 2]],
-                         self.sensor.get_adjacent_topology(Point2D(1, 2)).matrix)
+        self.assertEqual([[1, 2, 2], [1, 2, 3], [1, 1, 2]],
+                         self.sensor.get_adjacent_topology(Point2D(1, 2)).to_cartesian_matrix())
 
     def test_off_top_left(self):
-        self.assertEqual([[X, 1, 2], [X, 1, 1], [X, X, X]],
-                         self.sensor.get_adjacent_topology(Point2D(0, 5)).matrix)
+        self.assertEqual([[X, X, X], [X, 1, 1], [X, 1, 2]],
+                         self.sensor.get_adjacent_topology(Point2D(0, 5)).to_cartesian_matrix())
 
     def test_off_bottom_right(self):
-        self.assertEqual([[X, X, X], [1, 2, X], [1, 1, X]],
-                         self.sensor.get_adjacent_topology(Point2D(6, 0)).matrix)
+        self.assertEqual([[1, 1, X], [1, 2, X], [X, X, X]],
+                         self.sensor.get_adjacent_topology(Point2D(6, 0)).to_cartesian_matrix())
 
 
 if __name__ == '__main__':
