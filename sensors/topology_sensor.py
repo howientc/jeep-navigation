@@ -1,61 +1,66 @@
 from abc import ABC, abstractmethod
-from .sensor_buffer import SensorBuffer
 
 
 class TopologySensor(ABC):
-    __slots__ = ['read_topology_count', 'cell_scan_count', '_buffer', 'topology_map']
+    __slots__ = ['_radius', '_scan_point_cost', '_power_on_cost', '_power_on_count', '_scan_point_count', "_total_cost"]
     """
     Base class for topology sensors. They read the values of the terrain around them
-    TODO Scan cost
-    TODO Scan is per direction or total
     """
 
-    def __init__(self, sensor_radius=1):
+    def __init__(self, radius=1, power_on_cost=0, scan_point_cost=0):
         """
-        :param sensor_radius:
+        :param radius:
+        :param power_on_cost:
+        :param scan_point_cost:
         """
-        self._buffer = SensorBuffer(sensor_radius)
-        self.read_topology_count = 0  # how many times sensor is fired up
-        self.cell_scan_count = 0  # how many time scans of individual cells are done
-        self.topology_map = None  # will be injected later by factory. can be passed in for testing
+        self._radius=radius
+        self._power_on_cost = power_on_cost
+        self._scan_point_cost = scan_point_cost
 
-    def set_topology_map(self, topology_map):
-        self.topology_map = topology_map
+        self._power_on_count = 0  # how many times sensor is turned on
+        self._scan_point_count = 0  # how many time scans of individual cells are done
+        self._total_cost = 0
 
-    def walk_points_with_known(self, point):
-        for x, y, z, pt in self._buffer.walk_points(point):
-            yield x, y, self.topology_map.get_z(pt), pt
+    def increment_power_on_count(self):
+        self._power_on_count += 1
 
-    def _populate_adjacent_topology_from_known(self, field, point):
-        # self.walk_scan(field)
-        for x, y, z, pt in self.walk_points_with_known(point):
-            field[y][x] = z
+    def increment_scan_point_count(self):
+        self._scan_point_count += 1
 
-    def get_adjacent_topology(self, point):
+    def estimate_cost_to_scan(self, adjacent_points):
         """
-        :param point: current point of drone
+        The default implmentation is to calculate the cost of turning on the sensor + the
+        cost to scan each adjacent_point. This assumes all adjacent points are equally costly to scan.
+        :param adjacent_points:
         :return:
         """
-        scanned = False
-        for x, y, z, pt in self.walk_points_with_known(point):
-            if z is None:
-                z = self.scan(x, y, pt)
-                self._buffer.set_z(x, y, z)
-                self.topology_map.set_z(pt, z)
-                self.cell_scan_count += 1
-                scanned = True
-        if scanned:
-            self.read_topology_count += 1
+        if not adjacent_points:
+            return 0
 
-        return self._buffer
+        return self._power_on_cost + self._scan_point_cost * len(adjacent_points)
+
+    def turn_on(self):
+        """
+        this turns on the hardware. Subclass overrides should also call this super method
+        :return:
+        """
+        self._power_on_count += 1
+        self._total_cost += self._power_on_cost
+
+    def turn_off(self):
+        """
+        this turns off the hardware
+        :return:
+        """
+        pass
 
     @abstractmethod
-    def scan(self, x, y, point=None):
+    def scan_points(self, offsets, home_point):
         """
-        Request value at point
-        :param x:
-        :param y:
-        :param point:
-        :return:
-
+        Scan the points desired
+        :param offsets: A list of (x,y) tuples to scan
+        :param home_point: the physical point at 0,0
+        :return: a list of of tuples (x,y,z, point) corresponding to the values of points that were read. A sensor
+        is free to return MORE that what was asked for. If so, this list will be larger than the offsets list. The
+        caller can then use these additional points in its calculations
         """

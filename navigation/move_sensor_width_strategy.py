@@ -1,6 +1,6 @@
 import copy
 
-from .navigation_strategy import NavigationStrategy
+from .navigation_strategies import NavigationStrategy
 
 
 class MoveSensorWidthStrategy(NavigationStrategy):
