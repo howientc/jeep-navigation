@@ -60,7 +60,3 @@ class TestSimulatedTopology(unittest.TestCase):
         :return:
         """
         self.assertEqual(self.top.OUT_OF_BOUNDS, self.top.get_z(Point2D(1, 99999)))
-
-
-if __name__ == '__main__':
-    unittest.main()

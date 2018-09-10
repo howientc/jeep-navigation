@@ -1,8 +1,6 @@
 import unittest
 from tests.sensors.simulated_topology_sensor import SimulatedTopologySensor
-from tests.topology.test_simulated_topology import TEST_MAP
 from tests.topology.simulated_topology import SimulatedTopology
-from topology.topology_map import TopologyMap
 from geometry.point2d import Point2D
 
 X = SimulatedTopology.OUT_OF_BOUNDS  # For convenience in test comparisons, just call it X
@@ -15,21 +13,35 @@ class TestSimulatedTopologySensor(unittest.TestCase):
     """
 
     def setUp(self):
-        topology = SimulatedTopology(TEST_MAP)
-        self.sensor = SimulatedTopologySensor(topology, topology_map=TopologyMap())
+        simulated_map = SimulatedTopology([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]])
+        self.sensor = SimulatedTopologySensor(simulated_map, power_on_cost=10, scan_point_cost=2)
 
-    def test_normal(self):
-        self.assertEqual([[1, 2, 2], [1, 2, 3], [1, 1, 2]],
-                         self.sensor.get_adjacent_topology(Point2D(1, 2)).to_cartesian_matrix())
+    def test_scan_points(self):
+        """
+        Just one test because it's trivial. Try scanning a row, with values out of bounds on both sides
+        :return:
+        """
+        home_point = Point2D(0, 1)  # value is 5 at row 1 column 0
+        offsets = [(-1, 0), (0, 0), (1, 0), (100,100)]
+        expecting = [(-1, 0, X, Point2D(-1, 1)), (0, 0, 5, Point2D(0, 1)), (1, 0 , 6, Point2D(1, 1)), (100, 100 , X, Point2D(100, 101))]
+        scan_results, scan_cost = self.sensor.scan_points(offsets, home_point)
+        self.assertEqual(expecting, scan_results)
 
-    def test_off_top_left(self):
-        self.assertEqual([[X, X, X], [X, 1, 1], [X, 1, 2]],
-                         self.sensor.get_adjacent_topology(Point2D(0, 5)).to_cartesian_matrix())
+    def test_scan_cost(self):
+        home_point = Point2D(0, 1)  # value is 5 at row 1 column 0
+        offsets = [(-1, 0), (0, 0), (1, 0), (100,100)]
+        _, scan_cost = self.sensor.scan_points(offsets, home_point)
 
-    def test_off_bottom_right(self):
-        self.assertEqual([[1, 1, X], [1, 2, X], [X, X, X]],
-                         self.sensor.get_adjacent_topology(Point2D(6, 0)).to_cartesian_matrix())
+    def test_scan_total_cost(self):
+        home_point = Point2D(0, 1)  # value is 5 at row 1 column 0
+        offsets = [(-1, 0), (0, 0), (1, 0), (100, 100)]
+        self.sensor.scan_points(offsets, home_point)
+        self.sensor.scan_points(offsets, home_point)
+        self.assertEqual(16, self.sensor._total_cost)
 
-
-if __name__ == '__main__':
-    unittest.main()
+    def test_scan_point_count(self):
+        home_point = Point2D(0, 1)  # value is 5 at row 1 column 0
+        offsets = [(-1, 0), (0, 0), (1, 0), (100, 100)]
+        self.sensor.scan_points(offsets, home_point)
+        self.sensor.scan_points(offsets, home_point)
+        self.assertEqual(8, self.sensor._scan_point_count)

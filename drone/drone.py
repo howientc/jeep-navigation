@@ -1,19 +1,18 @@
 import logging
 from geometry.point2d import Point2D
-from navigation.navigation import Navigation
 
 
 class Drone(object):
-    __slots__ = ['_coords', '_navigation_strategy', '_topology_sensor']
+    __slots__ = ['_coords', '_topology_sensors', '_navigator']
 
-    def __init__(self, navigation_strategy, topology_sensor):
+    def __init__(self, navigator, topology_sensors):
         """
-        :param navigation_strategy:
-        :param topology_sensor:
+        :param navigator:
+        :param topology_sensors:
         """
         self._coords = Point2D(0, 0)
-        self._topology_sensor = topology_sensor
-        self._navigation = Navigation(navigation_strategy)
+        self._topology_sensors = topology_sensors
+        self._navigator = navigator
 
     def move_to(self, point):
         """
@@ -31,6 +30,6 @@ class Drone(object):
     def navigate_to_extraction_point(self, start_point):
         logging.info("Start point is ", start_point)
         self._coords = start_point  # set start position without calling move_to
-        return self._navigation.navigate_to_extraction_point(start_point=start_point,
-                                                             topology_sensor=self._topology_sensor,
-                                                             move_callback=lambda pt: self.move_to(pt))
+        for point in self._navigator.navigate_to_extraction_point(start_point=start_point,
+                                                                  topology_sensors=self._topology_sensors):
+            self.move_to(point)

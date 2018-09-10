@@ -13,7 +13,7 @@ class TopologySensor(ABC):
         :param power_on_cost:
         :param scan_point_cost:
         """
-        self._radius=radius
+        self._radius = radius
         self._power_on_cost = power_on_cost
         self._scan_point_cost = scan_point_cost
 

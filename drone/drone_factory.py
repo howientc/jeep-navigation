@@ -1,15 +1,8 @@
 from enum import Enum, auto
-from navigation.navigation import Navigation
-from navigation.navigation_strategies import NavigationStrategy
+from navigation.navigator_factory import NavigatorFactory
 from sensors.topology_sensor import TopologySensor
 from topology.topology_map import TopologyMap
 from drone.drone import Drone
-
-
-# These enums will be passed into clients of the factory
-class NavigationStrategyType(Enum):
-    MoveOne = auto()
-    MoveSensorWidth = auto()
 
 
 class TopologySensorType(Enum):
@@ -21,20 +14,6 @@ class TopologySensorType(Enum):
 
 
 class DroneFactory(object):
-    @staticmethod
-    def make_navigation_strategy(navigation_strategy_type):
-        """
-        Factory method to make a navigation strategy. If we wind up with lots of them,
-        maybe move to a factory class
-        :param navigation_strategy_type:
-        :return: NavigationStrategy instance
-        """
-        if navigation_strategy_type == NavigationStrategyType.MoveOne:
-            return MoveOneStrategy()
-        elif navigation_strategy_type == NavigationStrategyType.MoveSensorWidth:
-            return MoveSensorWidthStrategy()
-        else:
-            raise KeyError("Unknown Strategy Type: " + str(navigation_strategy_type))
 
     @staticmethod
     def make_sensor(sensor):
@@ -45,7 +24,7 @@ class DroneFactory(object):
             return sensor
 
         # TODO Implement Laser, Radar...
-        raise KeyError("Unknown Sensor Type: " + str(topology_sensor_type))
+        raise KeyError("Unknown Sensor Type: " + str(sensor))
 
     @staticmethod
     def is_extraction_point_func():
@@ -56,6 +35,7 @@ class DroneFactory(object):
         just use standard definition, that an extraction point cell is higher (or equal to) its adjacent cells
         :return:
         """
+
         def highest_of_adjacent(topology_map, point):
             """
             Local method to hold a callback to the standard test test
@@ -63,18 +43,18 @@ class DroneFactory(object):
             :param point:
             :return:
             """
-            return topology_map.is_highest_of_cached_adjacent(point)
+            return topology_map.is_highest_of_known_adjacent(point)
 
         return highest_of_adjacent
 
     @staticmethod
-    def make_drone(navigation_strategy, topology_sensors):
+    def make_drone(move_strategy, topology_sensors):
         """
         Factory method to make a drone. Accepts either objects or Enums as arguments.
-        This uses an Dependency Injection pattern for flexibility. We can use a variety of sensors,
-        navigation strategies, and rules, and then we pass the chosen ones the dependencies they need,
-        for example, the topology map is needed by everyone.
-        :param navigation_strategy: either a Navigation strategy, or Enum NavigationStrategyType
+        We can use a variety of sensors, navigation strategies, and rules, and then we pass the chosen ones
+        the dependencies they need,
+        For example, the topology map is needed by everyone.
+        :param move_strategy: either a MoveStrategy, a function, or Enum NavigationStrategyType
         :param topology_sensors: a list containing elements of either TopologySensor, or Enum TopologySensorType
         :return:
         """
@@ -83,15 +63,12 @@ class DroneFactory(object):
         # reuse it for this or any drone on subsequent missions
         topology_map = TopologyMap()
 
-        navigation_strategy = DroneFactory.make_navigation_strategy(navigation_strategy)
-
         # convert the passed-in sensor list to actual sensors in case enums were passed in
         sensors = [s if isinstance(s, TopologySensor) else DroneFactory.make_sensor(s) for s in topology_sensors]
 
-        navigation_strategy = DroneFactory.make_navigation_strategy(navigation_strategy)
         is_extraction_point_func = DroneFactory.is_extraction_point_func()
-        navigation = Navigation(topology_map=topology_map,
-                                navigation_strategy=navigation_strategy,
-                                is_extraction_point_func=is_extraction_point_func)
+        navigator = NavigatorFactory.make_navigator(topology_map=topology_map,
+                                                    move_strategy=move_strategy,
+                                                    is_extraction_point_func=is_extraction_point_func)
 
-        return Drone(navigation, topology_sensors=sensors)
+        return Drone(navigator, topology_sensors=sensors)
