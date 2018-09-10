@@ -1,17 +1,12 @@
 from enum import Enum, auto
-from navigation.move_one_strategy import MoveOneStrategy
-from navigation.move_sensor_width_strategy import MoveSensorWidthStrategy
 from navigation.navigation import Navigation
 from navigation.navigation_strategies import NavigationStrategy
 from sensors.topology_sensor import TopologySensor
 from topology.topology_map import TopologyMap
-
 from drone.drone import Drone
 
 
 # These enums will be passed into clients of the factory
-
-
 class NavigationStrategyType(Enum):
     MoveOne = auto()
     MoveSensorWidth = auto()

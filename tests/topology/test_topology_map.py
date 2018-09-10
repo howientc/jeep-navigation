@@ -1,7 +1,7 @@
 from unittest import TestCase
 from topology.topology_map import TopologyMap
 from geometry.point2d import Point2D
-from sensors.sensor_buffer import SensorBuffer
+
 
 class TestTopologyMap(TestCase):
 
@@ -22,22 +22,6 @@ class TestTopologyMap(TestCase):
     def test_set_and_get_z_with_different_point_objects(self):
         self.topology_map.set_z(Point2D(3, 3), 10)
         self.assertEqual(10, self.topology_map.get_z(Point2D(3, 3)))
-
-    def test_populate_sensor_buffer_from_cache(self):
-        buffer = SensorBuffer(1)
-        point = Point2D(3, 3)
-        self.create_adjacent_data_at_point(point)
-        self.topology_map.populate_sensor_buffer_from_cache(buffer, point)
-        self.assertEqual([[7,8,9],[4,5,6],[1,2,3]],buffer.to_cartesian_matrix())
-
-    def test_populate_sensor_buffer_from_cache_with_none_value(self):
-        buffer = SensorBuffer(1)
-        point = Point2D(3, 3)
-
-        self.create_adjacent_data_at_point(point)
-        self.topology_map.set_z(point, None)
-        self.topology_map.populate_sensor_buffer_from_cache(buffer, point)
-        self.assertEqual([[7,8,9],[4,None,6],[1,2,3]],buffer.to_cartesian_matrix())
 
     def test_is_highest_of_cached_adjacent(self):
         point = Point2D(5, 3)

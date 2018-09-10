@@ -8,12 +8,13 @@ class TopologyMap(object):
     point if it's within a certain threshold. That threshold could be determined by seeing if we have enough
     power to drive to the point.
     """
-    __slots__ = ['_cached_z', '_adjacent_cells']
+    __slots__ = ['_cached_z', '_all_cells', '_adjacent_cells']
 
     def __init__(self):
         self._cached_z = dict()  # keeps track of points already tracked to reduce cost of firing laser
         # for convenience, let's store off a list of offsets from 0, 0 to use in adjacent calculations
         self._adjacent_cells = [(x, y) for y in range(-1, 2) for x in range(-1, 2) if x != 0 or y != 0]
+        self._all_cells = [(x, y) for y in range(-1, 2) for x in range(-1, 2)]
 
     def get_z(self, point):
         return self._cached_z.get(point)
@@ -21,15 +22,30 @@ class TopologyMap(object):
     def set_z(self, point, height):
         self._cached_z[point] = height
 
-    def populate_sensor_buffer_from_cache(self, sensor_buffer, point):
-        for x, y, _, pt in sensor_buffer.walk_points(point):
-            sensor_buffer.set_z(x, y, self.get_z(pt))
-
     def walk_adjacent(self, point):
+        """
+        Walk all adjacent cells (excludes center)
+        :param point: center point
+        :return: generator yielding x, y, z, pt
+        """
         for (x, y) in self._adjacent_cells:
             pt = point.translate(x, y)
             z = self._cached_z.get(pt)
-            yield x,y,z,pt
+            yield x, y, z, pt
+
+    def walk_all(self, point):
+        """
+        Walk all adjacent cells (includes center)
+        :param point: center point
+        :return: generator yielding x, y, z, pt
+        """
+        for (x, y) in self._all_cells:
+            pt = point.translate(x, y)
+            z = self._cached_z.get(pt)
+            yield x, y, z, pt
+
+    def count_unknown_points_at_and_adjacent_to_point(self, point):
+        return sum(z is None for _x, _y, z, _pt in self.walk_all(point))
 
     def is_highest_of_cached_adjacent(self, point):
         """
@@ -43,26 +59,13 @@ class TopologyMap(object):
         if not center_z:
             return False
 
-        for x, y, z, pt in self._walk_adjacent(point):
+        for x, y, z, pt in self.walk_adjacent(point):
             if not z or z > center_z:
                 return False
         return True
 
-    def find_any_adjacent_point_that_is_highest(self, point):
+    def get_highest_adjacent_points_as_directions(self, point):
         """
-        It's possible that sensor heights are now complete around an adjacent point because of previously read
-        heights from another scan. So let's check and see.
-        :param point:
-        :return:
-        """
-        for _x, _y, _z, pt in self._walk_adjacent(point):
-            if self.is_highest_of_cached_adjacent(pt):
-                return pt
-        return None
-
-    def get_highest_adjacent_points_as_offsets(self, point):
-        """
-
         :param point:
         :return:
         """
@@ -70,6 +73,6 @@ class TopologyMap(object):
         highest_adjacent = max(self._walk_adjacent(point), key=lambda vals: vals.z)
 
         # Now get the highest adjacent offsets as (x,y) tuples
-        candidates = [(vals.x, vals.y) for vals in self._walk_adjacent(point) if vals.z == highest_adjacent]  # array of tuples x,y
+        candidates = [(vals.x, vals.y) for vals in self._walk_adjacent(point) if
+                      vals.z == highest_adjacent]  # array of tuples x,y
         return candidates
-

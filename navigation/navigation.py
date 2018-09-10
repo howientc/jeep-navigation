@@ -32,10 +32,10 @@ class Navigation(object):
             if self.is_extraction_point_func(tm,candidate_point):
                 return candidate_point, True  # Yes we found one.
 
-        # What are the biggest points adjacent to where we are now?
-        highest_offsets = tm.get_highest_adjacent_points_as_offsets(point)
+        # What are the the directions to biggest points adjacent to where we are now?
+        highest_directions = tm.get_highest_adjacent_points_as_directions(point)
 
-        next_point = self._navigation_strategy.determine_next_point(tm, point, highest_offsets)
+        next_point = self._navigation_strategy.determine_next_point(tm, point, highest_directions)
         return next_point, False
 
     def _scan_and_get_candidates(self, point, topology_sensors):

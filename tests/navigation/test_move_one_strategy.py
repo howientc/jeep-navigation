@@ -1,5 +1,4 @@
 import unittest
-from navigation.move_one_strategy import MoveOneStrategy
 from tests.topology.simulated_topology import SimulatedTopology
 from tests.topology.test_simulated_topology import TEST_MAP
 from tests.sensors.simulated_topology_sensor import SimulatedTopologySensor

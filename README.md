@@ -70,11 +70,11 @@ the highest, you need to use a tiebreak to figure out which way to move. Maybe y
 
 So how much should you move?
 
-#### Naive strategy
+#### Naive move 1 strategy
 A naive strategy is to move one unit in the direction (diagonal would be moving both x and y). While this is conceptually simple, it would mean lots of
 unpacking/callibrating/repacking of the equipment.
 
-#### Move 3 strategy
+#### Move N strategy (N=3)
 A more efficient strategy would be to move 3 units in the direction instead of just one. That way, you could potentially be scanning a full
 9 cells each time. Because of how you check for extraction points: not just scanned cells but also those adjacent to them, you won't miss
 anything by doing this. That is, except if you moved on a diagonal. Imagine this is the real topology, where 
@@ -91,14 +91,14 @@ Say you start in the lower left, where the height 1 is. Your scan would be of th
 corner and points you tomove up and right, so you'd move three cells over to the cell of height 2 in the upper right quadrant. But 
 then 3 cell would point you back to the lower left where you just came from.
 
-#### Move 3 ordinal, 1 diagonal variant 
+#### Move N cardinal, 1 ordinal variant (N = 3)
 One solution to avoid this is to only move 1 cell (x,y) if moving on a diagonal. In this case, we'd move from 1 to 9, and we'd see
 that 9 is an extraction point. The drawback, of course, is like in the naive strategy, we'd do a lot more unpacking/callibration than 
 we'd like. Given that half of the adjacent cells are corners, you'd be moving on a diagonal a lot. 
 
 You could at least say that if an edge and a corner are tied for highest, prefer moving towards the edge. This would help some.
 
-#### Smart diagonal strategy
+#### Smart oridinal strategy
 When the scan shows a corner cell is the highest, you'll determine a path that gets you to the cell (3,3) away by also visiting the
 cells (0,3) away and (3,0) away. In other words. In our example, we might move up, right, and then down, ending in the lower right
 quadrant. To determine this path, you'd look at the map and see if you've already been to those cells, and if so, skip them.
@@ -153,12 +153,16 @@ we should use an established library, such as [sympy](https://docs.sympy.org/lat
 Points use a 2D cartesian coordinate system so that:
 * North is +Y, South is -Y
 * East is +X, West is -X
-
 Furthermore, heights are the Z-axis, with increasing Z being increasing height
 
-Need to take care in code:
-* that increasing array rows = decreasing Y (and vice versa)
-* indexing into a 2D array is array[y][x], whereas points are (x,y)
+#### Directions
+* Cardinal directions are North (0,1), South (0,-1), East (1,0), West (-1,0)
+* Ordinal directions are the diagonal ones: NE (1,1), SE (1, -1), SW (-1, -1), NW (-1, 1)
+
+#### Issues with arrays 
+For the most part, we don't need to care that arrays have rows and columns vs x and y coordonates.
+The only time this is an issue is for humans to produce test data where the rows of the array actually
+are negatively corresponding to y values.
 
 ## Future Directions
 Incorporate cost of moving, both laterally and vertically
