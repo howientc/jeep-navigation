@@ -1,5 +1,4 @@
-from operator import itemgetter
-
+from geometry.point2d import Point2D
 
 class TopologyMap(object):
     """
@@ -11,19 +10,46 @@ class TopologyMap(object):
     point if it's within a certain threshold. That threshold could be determined by seeing if we have enough
     power to drive to the point.
     """
-    __slots__ = ['_known_z', '_all_cells', '_adjacent_cells']
+    __slots__ = ['_known_z', '_all_cells', '_adjacent_cells', '_lower_left', '_upper_right']
 
     def __init__(self):
         self._known_z = dict()  # keeps track of points already tracked to reduce cost of firing laser
         # for convenience, let's store off a list of offsets from 0, 0 to use in adjacent calculations
         self._adjacent_cells = [(x, y) for y in range(-1, 2) for x in range(-1, 2) if x != 0 or y != 0]
         self._all_cells = [(x, y) for y in range(-1, 2) for x in range(-1, 2)]
+        self._lower_left = None
+        self._upper_right = None
 
     def get_z(self, point):
         return self._known_z.get(point)
 
     def set_z(self, point, height):
         self._known_z[point] = height
+
+        # adjust our current bounds
+        if not self._upper_right:
+            self._upper_right = self._lower_left = point
+        else:
+            self._upper_right = Point2D(max(self._upper_right.x, point.x), max(self._upper_right.y, point.y))
+            self._lower_left = Point2D(min(self._lower_left.x, point.x), min(self._lower_left.y, point.y))
+
+    def width_and_height(self):
+        return self._upper_right.x - self._lower_left.x, self._upper_right.y - self._lower_left.y
+
+    def get_boundary_points(self):
+        """
+        a pair of points, lower-left, upper-right
+        :return:
+        """
+        return self._lower_left, self._upper_right
+
+    def walk_entire_map(self):
+        """
+        Generate all of the points as x,y,z
+        :return:
+        """
+        for pt, z in self._known_z.items():
+            yield pt.x, pt.y, z
 
     def walk_points(self, point, cells):
         for (x, y) in cells:
