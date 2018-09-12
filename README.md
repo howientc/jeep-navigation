@@ -137,6 +137,10 @@ a rule to limit total distance from the start we are willing to travel before he
 * Using PEP-8 coding convention
    * The problem refers to a method named: <code>navigateToExtractionPoint</code>. Because the problem was
    language-neutral, a camelCase name was used. I will assume that I can rename the method to use PEP-8 naming
+* non-public class members/functions must be prefixed with _
+* Use standard decorators when appropriate (e.g. @staticmethod, @classmethod, @property...)
+* Generator function names must begin with iter_
+* Variables holding function pointers should be prefixed with func_
 * All classes should have __slots__ defined for each member variable in them
    * This helps catch accidental bugs to to typos in declaring members
    * It also is an internal optimization

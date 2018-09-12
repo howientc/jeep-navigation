@@ -30,6 +30,6 @@ class Drone(object):
     def navigate_to_extraction_point(self, start_point):
         logging.info("Start point is ", start_point)
         self._coords = start_point  # set start position without calling move_to
-        for point in self._navigator.navigate_to_extraction_point(start_point=start_point,
-                                                                  topology_sensors=self._topology_sensors):
+        for point in self._navigator.iter_points_to_destination(start_point=start_point,
+                                                                topology_sensors=self._topology_sensors):
             self.move_to(point)

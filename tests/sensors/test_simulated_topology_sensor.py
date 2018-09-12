@@ -1,9 +1,9 @@
 import unittest
 from tests.sensors.simulated_topology_sensor import SimulatedTopologySensor
-from tests.topology.simulated_topology import SimulatedTopology
+from topology.topology_map import TopologyMap, OUT_OF_BOUNDS
 from geometry.point2d import Point2D
 
-X = SimulatedTopology.OUT_OF_BOUNDS  # For convenience in test comparisons, just call it X
+X = OUT_OF_BOUNDS  # For convenience in test comparisons, just call it X
 
 
 class TestSimulatedTopologySensor(unittest.TestCase):
@@ -13,7 +13,8 @@ class TestSimulatedTopologySensor(unittest.TestCase):
     """
 
     def setUp(self):
-        simulated_map = SimulatedTopology([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]])
+        simulated_map = TopologyMap()
+        simulated_map.populate_from_matrix([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]])
         self.sensor = SimulatedTopologySensor(simulated_map, power_on_cost=10, scan_point_cost=2)
 
     def test_scan_points(self):

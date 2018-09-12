@@ -27,7 +27,7 @@ class DroneFactory(object):
         raise KeyError("Unknown Sensor Type: " + str(sensor))
 
     @staticmethod
-    def is_extraction_point_func():
+    def func_is_extraction_point():
         """
         For flexibility, this provides a means to specify a rule for determining if a point is an extraction point.
         This can be useful if the definition of extraction point can depend on something. For example, in bad
@@ -66,9 +66,9 @@ class DroneFactory(object):
         # convert the passed-in sensor list to actual sensors in case enums were passed in
         sensors = [s if isinstance(s, TopologySensor) else DroneFactory.make_sensor(s) for s in topology_sensors]
 
-        is_extraction_point_func = DroneFactory.is_extraction_point_func()
+        func_is_destination_point = DroneFactory.func_is_extraction_point()
         navigator = NavigatorFactory.make_navigator(topology_map=topology_map,
                                                     move_strategy=move_strategy,
-                                                    is_extraction_point_func=is_extraction_point_func)
+                                                    func_is_destination_point=func_is_destination_point)
 
         return Drone(navigator, topology_sensors=sensors)

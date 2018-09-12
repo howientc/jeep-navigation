@@ -1,13 +1,14 @@
 import unittest
-from tests.topology.simulated_topology import SimulatedTopology
-from tests.topology.test_simulated_topology import TEST_MAP
+from tests.topology.test_topology_map import TEST_MAP
+from topology_map import TopologyMap
 from tests.sensors.simulated_topology_sensor import SimulatedTopologySensor
 from geometry.point2d import Point2D
 
 
 class TestMoveStrategy(unittest.TestCase):
     def setUp(self):
-        topology = SimulatedTopology(TEST_MAP)
+        topology = TopologyMap()
+        topology.populate_from_matrix(TEST_MAP)
         sensor = SimulatedTopologySensor(topology)
         # self.strategy = MoveOneStrategy()
 
