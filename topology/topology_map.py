@@ -27,28 +27,6 @@ class TopologyMap(object):
         self._lower_left = None
         self._upper_right = None
 
-    def populate_from_matrix(self, topology_matrix, origin=ORIGIN, set_bounds=True):
-        """
-        Populates the map from a matrix. Mostly useful in testing, but someday we might want to preload one or more
-        matrices of data into our maps
-        :param topology_matrix:
-        :param origin:
-        :param set_bounds: True (default) if we should limit the map's bounds to this array's dimensions
-        :return:
-        """
-        width = len(topology_matrix[0])  # the width of the first row is the width of all rows
-        height = len(topology_matrix)
-        origin = origin
-        for row in range(height):
-            for col in range(width):
-                # reversing rows to make y value
-                point = Point2D(origin.x + col, origin.y + height - row - 1)
-                self.set_z(point, topology_matrix[row][col])
-
-        if set_bounds:
-            self._lower_left_bounds = origin
-            self._upper_right_bounds = Point2D(origin.x + width - 1, origin.y + height - 1)
-
     def get_z(self, point, default=None):
         """
         Gets z value (height) at a point. If out of bounds, returns OUT_OF_BOUNDS

@@ -17,7 +17,7 @@ class Point2D(object):
         return Point2D(self._x + x, self._y + y)
 
     def translate(self, x, y):
-        return self.translate(x, y)
+        return self.translate2d(x, y)
 
     def distance2d(self, other):
         return math.hypot(self.x - other.x, self.y - other.y)

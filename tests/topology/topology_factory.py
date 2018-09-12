@@ -9,11 +9,88 @@ class TopologyFactory(object):
         self._upper_right = upper_right
         self._tm = TopologyMap()
 
+
+    @staticmethod
+    def make_from_matrix(topology_matrix, origin=ORIGIN, set_bounds=True):
+        """
+        Populates the map from a matrix. Mostly useful in testing, but someday we might want to preload one or more
+        matrices of data into our maps. Consider supporting numpy matrixes too
+        :param topology_matrix:
+        :param origin:
+        :param set_bounds: True (default) if we should limit the map's bounds to this array's dimensions
+        :return:
+        """
+        width = len(topology_matrix[0])  # the width of the first row is the width of all rows
+        height = len(topology_matrix)
+        origin = origin
+        if set_bounds:
+            tm = TopologyMap(lower_left_bounds=origin, upper_right_bounds=origin.translate(width - 1, height-1))
+        else:
+            tm = TopologyMap()
+
+        for row in range(height):
+            for col in range(width):
+                # reversing rows to make y value
+                point = Point2D(origin.x + col, origin.y + height - row - 1)
+                tm.set_z(point, topology_matrix[row][col])
+        return tm
+
+    @staticmethod
+    def make_fake_topology(density=.03, lower_left=ORIGIN, upper_right=Point2D(30, 30), max_z=None):
+        """
+        Generates a topology to test with. It's possible that the resulting topology could have more "extraction points"
+        (peaks or flat areas) than the number of seeds because of the way the generated peaks collide.
+        This code is slow for large regions. Consider refactoring to start out with a zero'd numpy array and
+        manipulating that, only to make from a matrix at the end
+        :param density: number of peeks / total area
+        :param lower_left: lower-left point
+        :param upper_right: upper-right point
+        :param max_z: Maximum z value to generate
+        :return: generated topology map
+        """
+        styles = ['cone', 'pyramid']
+        if not max_z:
+            biggest_axis = max(upper_right.x - lower_left.x, upper_right.y - lower_left.y)
+            max_z = round(biggest_axis / 1.2)  # Just need a rule here. how about max height is half width?
+
+        factory = TopologyFactory(lower_left, upper_right)
+        number_of_seeds = round(factory.cell_count * density)  # how many seeds depends on density and area
+
+        # Produce roughly (due to rounding) the number of seeds. We will perform multiple passes,
+        # generating random x,y,z values and adding them as peaks on the map. With each pass, the
+        # range of z values tends to get smaller (though there is randomness).
+        # Also, each pass has a random steepness value, which is essentially the step height if we
+        # are walking up an Aztec pyramid
+        seeds_per_pass = 5  # a decent-looking value
+        passes = round(number_of_seeds // seeds_per_pass)
+
+        for i in range(1, passes + 1):
+            # get a z-range for this pass
+            max_z_pass = round(max_z / i)
+            min_z_pass = max_z_pass // 2
+
+            seeds = factory._random_points_3d(seeds_per_pass, min_z_pass, max_z_pass)
+            steepness = random.uniform(1, 4)  # the resulting step height between adjacent cells
+            factory._add_peaks_from_seed_points3d(seeds, random.choice(styles), steepness=steepness)
+        return factory._tm
+
     @property
     def cell_count(self):
         return (self._upper_right.x - self._lower_left.x + 1) * (self._upper_right.y - self._lower_left.y + 1)
 
-    def add_peaks_from_seed_points3d(self, seed_points_3d, style='cone', steepness=1):
+    @staticmethod
+    def save_to_geojson(self, topology_map, filename):
+        """
+        Someday we might want to persist a topology
+        """
+
+    @staticmethod
+    def load_from_geojson(self, filename_or_url):
+        """
+        Someday we might want to read a topology from Geo-json format. eventually do KML too?
+        """
+
+    def _add_peaks_from_seed_points3d(self, seed_points_3d, style='cone', steepness=1):
         """
         The seed points are local or global maximums, and then
         surrounding points are lower and lower with distance. 'cone' style has peaks shaped like cones,
@@ -48,7 +125,7 @@ class TopologyFactory(object):
 
         return self._tm
 
-    def random_points_3d(self, number_of_seeds, min_z, max_z):
+    def _random_points_3d(self, number_of_seeds, min_z, max_z):
         """
         Creates a list of unique (x,y,z) tuples
         :param number_of_seeds: Number of unique points to generate
@@ -67,39 +144,3 @@ class TopologyFactory(object):
                 found[pt] = random.randint(min_z, max_z)
         return [Point3D(pt.x, pt.y, z) for pt, z in found.items()]
 
-    @staticmethod
-    def make_fake_topology(density=.03, lower_left=ORIGIN, upper_right=Point2D(30, 30), max_z=None):
-        """
-        Generates a topology to test with. It's possible that the resulting topology could have more "extraction points"
-        (peaks or flat areas) than the number of seeds because of the way the generated peaks collide.
-        :param density: number of peeks / total area
-        :param lower_left: lower-left point
-        :param upper_right: upper-right point
-        :param max_z: Maximum z value to generate
-        :return: generated topology map
-        """
-        styles = ['cone', 'pyramid']
-        if not max_z:
-            biggest_axis = max(upper_right.x - lower_left.x, upper_right.y - lower_left.y)
-            max_z = round(biggest_axis / 1.2)  # Just need a rule here. how about max height is half width?
-
-        factory = TopologyFactory(lower_left, upper_right)
-        number_of_seeds = round(factory.cell_count * density)  # how many seeds depends on density and area
-
-        # Produce roughly (due to rounding) the number of seeds. We will perform multiple passes,
-        # generating random x,y,z values and adding them as peaks on the map. With each pass, the
-        # range of z values tends to get smaller (though there is randomness).
-        # Also, each pass has a random steepness value, which is essentially the step height if we
-        # are walking up an Aztec pyramid
-        seeds_per_pass = 5  # a decent-looking value
-        passes = round(number_of_seeds // seeds_per_pass)
-
-        for i in range(1, passes + 1):
-            # get a z-range for this pass
-            max_z_pass = round(max_z / i)
-            min_z_pass = max_z_pass // 2
-
-            seeds = factory.random_points_3d(seeds_per_pass, min_z_pass, max_z_pass)
-            steepness = random.uniform(1, 4)  # the resulting step height between adjacent cells
-            factory.add_peaks_from_seed_points3d(seeds, random.choice(styles), steepness=steepness)
-        return factory._tm

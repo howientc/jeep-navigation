@@ -1,7 +1,7 @@
 from unittest import TestCase
 from topology.topology_map import TopologyMap, iter_offsets_in_radius, iter_adjacent_offsets_in_radius, OUT_OF_BOUNDS
 from geometry.point import Point2D
-
+from tests.topology.topology_factory import TopologyFactory
 TEST_MAP = [
     [1, 1, 1, 1, 1, 1, 1],
     [1, 2, 2, 1, 1, 2, 4],
@@ -133,7 +133,7 @@ class TestTopologyMap(TestCase):
         self.assertEqual([(-1, -1), (0, -1), (1, -1)], candidates)
 
     def test_populate_from_matrix(self):
-        self.tm.populate_from_matrix(TEST_MAP)
+        self.tm = TopologyFactory.make_from_matrix(TEST_MAP)
         height = len(TEST_MAP)
         width = len(TEST_MAP[0])
         for y in range(height):
@@ -142,7 +142,7 @@ class TestTopologyMap(TestCase):
                 self.assertEqual(TEST_MAP[row][x], self.tm.get_z(Point2D(x, y)))
 
     def test_populate_from_matrix_origin_shift(self):
-        self.tm.populate_from_matrix(TEST_MAP, origin=Point2D(10, 20))
+        self.tm = TopologyFactory.make_from_matrix(TEST_MAP, origin=Point2D(10, 20))
         # The 4 is normally at point (6,4)
         self.assertEqual(4, self.tm.get_z(Point2D(16, 24)))
 
@@ -150,62 +150,62 @@ class TestTopologyMap(TestCase):
         """
         :return:
         """
-        self.tm.populate_from_matrix(TEST_MAP, origin=Point2D(10, 20), set_bounds=False)
+        self.tm = TopologyFactory.make_from_matrix(TEST_MAP, origin=Point2D(10, 20), set_bounds=False)
         self.assertNotEqual(OUT_OF_BOUNDS, self.tm.get_z(Point2D(9, 22)))
 
     def test_before_min_bounds_x(self):
         """
         :return:
         """
-        self.tm.populate_from_matrix(TEST_MAP, origin=Point2D(10, 20))
+        self.tm = TopologyFactory.make_from_matrix(TEST_MAP, origin=Point2D(10, 20))
         self.assertEqual(OUT_OF_BOUNDS, self.tm.get_z(Point2D(9, 22)))
 
     def test_on_min_bounds_x(self):
         """
         :return:
         """
-        self.tm.populate_from_matrix(TEST_MAP, origin=Point2D(10, 20))
+        self.tm = TopologyFactory.make_from_matrix(TEST_MAP, origin=Point2D(10, 20))
         self.assertNotEqual(OUT_OF_BOUNDS, self.tm.get_z(Point2D(10, 22)))
 
     def test_after_max_bounds_x(self):
         """
         :return:
         """
-        self.tm.populate_from_matrix(TEST_MAP, origin=Point2D(10, 20))
+        self.tm = TopologyFactory.make_from_matrix(TEST_MAP, origin=Point2D(10, 20))
         self.assertEqual(OUT_OF_BOUNDS, self.tm.get_z(Point2D(17, 22)))
 
     def test_on_max_bounds_x(self):
         """
         :return:
         """
-        self.tm.populate_from_matrix(TEST_MAP, origin=Point2D(10, 20))
+        self.tm = TopologyFactory.make_from_matrix(TEST_MAP, origin=Point2D(10, 20))
         self.assertNotEqual(OUT_OF_BOUNDS, self.tm.get_z(Point2D(16, 22)))
 
     def test_before_min_bounds_y(self):
         """
         :return:
         """
-        self.tm.populate_from_matrix(TEST_MAP, origin=Point2D(10, 20))
+        self.tm = TopologyFactory.make_from_matrix(TEST_MAP, origin=Point2D(10, 20))
         self.assertEqual(OUT_OF_BOUNDS, self.tm.get_z(Point2D(12, 19)))
 
     def test_on_min_bounds_y(self):
         """
         :return:
         """
-        self.tm.populate_from_matrix(TEST_MAP, origin=Point2D(10, 20))
+        self.tm = TopologyFactory.make_from_matrix(TEST_MAP, origin=Point2D(10, 20))
         self.assertNotEqual(OUT_OF_BOUNDS, self.tm.get_z(Point2D(12, 20)))
 
     def test_after_max_bounds_y(self):
         """
         :return:
         """
-        self.tm.populate_from_matrix(TEST_MAP, origin=Point2D(10, 20))
+        self.tm = TopologyFactory.make_from_matrix(TEST_MAP, origin=Point2D(10, 20))
         self.assertEqual(OUT_OF_BOUNDS, self.tm.get_z(Point2D(12, 26)))
 
     def test_on_max_bounds_y(self):
         """
         :return:
         """
-        self.tm.populate_from_matrix(TEST_MAP, origin=Point2D(10, 20))
+        self.tm = TopologyFactory.make_from_matrix(TEST_MAP, origin=Point2D(10, 20))
         self.assertNotEqual(OUT_OF_BOUNDS, self.tm.get_z(Point2D(12, 25)))
 
