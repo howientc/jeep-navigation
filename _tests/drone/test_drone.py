@@ -1,7 +1,7 @@
 import logging
 from unittest import TestCase
-from tests.sensors.simulated_topology_sensor import SimulatedTopologySensor
-from tests.topology.topology_factory import TopologyFactory
+from _tests.sensors.simulated_topology_sensor import SimulatedTopologySensor
+from _tests.topology.topology_factory import TopologyFactory
 from geometry.point import Point2D
 from drone.drone_factory import DroneFactory
 from navigation.move_strategy import MoveStrategyType

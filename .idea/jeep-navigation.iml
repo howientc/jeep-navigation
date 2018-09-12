@@ -6,11 +6,11 @@
       <sourceFolder url="file://$MODULE_DIR$/geometry" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/navigation" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/sensors" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/tests" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/tests/drone" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/tests/navigation" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/tests/sensors" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/tests/topology" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/_tests" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/_tests/drone" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/_tests/navigation" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/_tests/sensors" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/_tests/topology" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/topology" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/ui" isTestSource="false" />
     </content>

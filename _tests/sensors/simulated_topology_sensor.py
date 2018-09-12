@@ -3,7 +3,7 @@ from sensors.topology_sensor import TopologySensor
 
 class SimulatedTopologySensor(TopologySensor):
     """
-    A sensor used in testing. It serves to simulate reading values from MockTopology
+    A sensor used in testing. It serves to simulate reading values from a simulated TopologyMap
     """
 
     __slots__ = ['_simulated_map']

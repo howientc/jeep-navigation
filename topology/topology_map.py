@@ -1,4 +1,4 @@
-from geometry.point import Point2D, ORIGIN
+from geometry.point import Point2D
 
 OUT_OF_BOUNDS = float("-inf")
 NO_BOUNDS = float("inf")
@@ -106,7 +106,22 @@ class TopologyMap(object):
         return self.iter_offsets_around_point(point, iter_adjacent_offsets_in_radius(radius))
 
     def unknown_adjacent_offsets(self, point, radius=1):
+        """
+        Gets offsets to all unknown cells around a point.
+        :param point:
+        :param radius:
+        :return:
+        """
         return [(x, y) for x, y, known, pt in self.iter_adjacent_points(point, radius) if not known]
+
+    def unknown_adjacent_points(self, point, radius=1):
+        """
+        Gets points for all unknown points around a point.
+        :param point:
+        :param radius:
+        :return:
+        """
+        return [pt for x, y, known, pt in self.iter_adjacent_points(point, radius) if not known]
 
     def iter_self_and_adjacent_points(self, point, radius=1):
         """

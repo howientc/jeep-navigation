@@ -9,7 +9,6 @@ class TopologyFactory(object):
         self._upper_right = upper_right
         self._tm = TopologyMap()
 
-
     @staticmethod
     def make_from_matrix(topology_matrix, origin=ORIGIN, set_bounds=True):
         """
@@ -24,7 +23,7 @@ class TopologyFactory(object):
         height = len(topology_matrix)
         origin = origin
         if set_bounds:
-            tm = TopologyMap(lower_left_bounds=origin, upper_right_bounds=origin.translate(width - 1, height-1))
+            tm = TopologyMap(lower_left_bounds=origin, upper_right_bounds=origin.translate(width - 1, height - 1))
         else:
             tm = TopologyMap()
 
@@ -114,6 +113,7 @@ class TopologyFactory(object):
         for y in range(self._lower_left.y, self._upper_right.y + 1):
             for x in range(self._lower_left.x, self._upper_right.x + 1):
                 grid_point = Point2D(x, y)
+                # consider using scipy.spatial.distance.cdist if moving to numpy. Lots of metric options to use!
                 closest_seed = min(seed_points_3d, key=lambda seed: grid_point.distance2d(seed))
                 delta_z = round(steepness * (closest_seed.z - z_func(grid_point, closest_seed)))
                 if delta_z < 0:
@@ -143,4 +143,3 @@ class TopologyFactory(object):
             if pt not in found:  # make sure unique
                 found[pt] = random.randint(min_z, max_z)
         return [Point3D(pt.x, pt.y, z) for pt, z in found.items()]
-
