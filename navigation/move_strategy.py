@@ -1,5 +1,5 @@
 from enum import Enum, auto
-from geometry.point2d import Point2D
+from geometry.point import Point2D
 
 
 class MoveStrategyType(Enum):
@@ -34,8 +34,8 @@ class MoveStrategy(object):
                  prefer_cardinal_to_ordinal=True):
         self._cardinal_move_amount = cardinal_move_amount
         self._ordinal_move_amount = ordinal_move_amount
-        _prefer_moving_to_lesser_known_points = prefer_moving_to_lesser_known_points
-        _prefer_cardinal_to_ordinal = prefer_cardinal_to_ordinal
+        self._prefer_moving_to_lesser_known_points = prefer_moving_to_lesser_known_points
+        self._prefer_cardinal_to_ordinal = prefer_cardinal_to_ordinal
 
     def __call__(self, topology_map, point, directions):
         """
@@ -64,7 +64,7 @@ class MoveStrategy(object):
         candidate_directions, cardinal = self._choose_candidate_directions(directions)
         move_amount = self._cardinal_move_amount if cardinal else self._ordinal_move_amount
         # let's get the points that we'd move to
-        move_points = offset_points_by_directions(point, candidate_directions, move_amount)
+        move_points = translate_points_by_directions(point, candidate_directions, move_amount)
 
         # sort candidate points by how well we know the points around them
         sorted_move_points = sorted(move_points,
@@ -104,5 +104,5 @@ def corners_only(directions):
     return [(x, y) for x, y in directions if x * y != 0]
 
 
-def offset_points_by_directions(point, directions, amount):
-    return [point.offest(amount * x, amount * y) for x, y in directions]
+def translate_points_by_directions(point, directions, amount):
+    return [point.translate(amount * x, amount * y) for x, y in directions]

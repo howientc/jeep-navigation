@@ -1,6 +1,6 @@
 from unittest import TestCase
-from topology.topology_map import TopologyMap, iter_cells_in_radius, iter_adjacent_cells_in_radius, OUT_OF_BOUNDS
-from geometry.point2d import Point2D
+from topology.topology_map import TopologyMap, iter_offsets_in_radius, iter_adjacent_offsets_in_radius, OUT_OF_BOUNDS
+from geometry.point import Point2D
 
 TEST_MAP = [
     [1, 1, 1, 1, 1, 1, 1],
@@ -10,6 +10,7 @@ TEST_MAP = [
     [1, 1, 2, 1, 1, 1, 1],
     [1, 1, 1, 1, 1, 1, 2],
 ]
+
 
 class TestTopologyMap(TestCase):
 
@@ -46,11 +47,11 @@ class TestTopologyMap(TestCase):
 
     def test_cells_in_radius(self):
         expecting = [(-1, -1), (0, -1), (1, -1), (-1, 0), (0, 0), (1, 0), (-1, 1), (0, 1), (1, 1)]
-        self.assertEqual(expecting, list(iter_cells_in_radius(1)))
+        self.assertEqual(expecting, list(iter_offsets_in_radius(1)))
 
     def test_adjacent_cells_in_radius(self):
         expecting = [(-1, -1), (0, -1), (1, -1), (-1, 0), (1, 0), (-1, 1), (0, 1), (1, 1)]
-        self.assertEqual(expecting, list(iter_adjacent_cells_in_radius(1)))
+        self.assertEqual(expecting, list(iter_adjacent_offsets_in_radius(1)))
 
     def test_get_z_unknown_point(self):
         self.assertIsNone(self.tm.get_z(Point2D(3, 3)))
@@ -63,31 +64,31 @@ class TestTopologyMap(TestCase):
         point = Point2D(5, 3)
         self.create_adjacent_data_at_point(point)
         self.tm.set_z(point, 100)
-        self.assertTrue(self.tm.is_highest_of_known_adjacent(point))
+        self.assertTrue(self.tm.is_highest_of_adjacent_points(point))
 
     def test_is_highest_or_tie_known_adjacent(self):
         point = Point2D(8, 1)
         self.create_adjacent_data_at_point(point)
         self.tm.set_z(point, 9)
-        self.assertTrue(self.tm.is_highest_of_known_adjacent(point))
+        self.assertTrue(self.tm.is_highest_of_adjacent_points(point))
 
     def test_isnt_highest_of_known_adjacent(self):
         point = Point2D(8, 1)
         self.create_adjacent_data_at_point(point)
-        self.assertFalse(self.tm.is_highest_of_known_adjacent(point))
+        self.assertFalse(self.tm.is_highest_of_adjacent_points(point))
 
     def test_isnt_highest_of_known_adjacent_if_none_found(self):
         point = Point2D(12, 11)
         clear = Point2D(11, 11)
         self.create_adjacent_data_at_point(point)
         self.tm.set_z(clear, None)
-        self.assertFalse(self.tm.is_highest_of_known_adjacent(point))
+        self.assertFalse(self.tm.is_highest_of_adjacent_points(point))
 
     def test_isnt_highest_if_point_not_found(self):
         point = Point2D(12, 11)
         self.create_adjacent_data_at_point(point)
         self.tm.set_z(point, None)
-        self.assertFalse(self.tm.is_highest_of_known_adjacent(point))
+        self.assertFalse(self.tm.is_highest_of_adjacent_points(point))
 
     def test_count_unknown_points_at_and_adjacent_to_fully_known_point(self):
         point = Point2D(12, 11)
@@ -111,7 +112,7 @@ class TestTopologyMap(TestCase):
         point = Point2D(10, 10)
         self.create_adjacent_data_at_point(point)
         self.tm.set_z(point.translate(-1, -1), 99)
-        candidates = self.tm.get_highest_adjacent_points_as_directions(point)
+        candidates = self.tm.get_highest_adjacent_offsets(point)
         self.assertEqual([(-1, -1)], candidates)
 
     def test_get_highest_adjacent_points_as_directions_two(self):
@@ -119,7 +120,7 @@ class TestTopologyMap(TestCase):
         self.create_adjacent_data_at_point(point)
         self.tm.set_z(point.translate(-1, -1), 99)
         self.tm.set_z(point.translate(0, -1), 99)
-        candidates = self.tm.get_highest_adjacent_points_as_directions(point)
+        candidates = self.tm.get_highest_adjacent_offsets(point)
         self.assertEqual([(-1, -1), (0, -1)], candidates)
 
     def test_get_highest_adjacent_points_as_directions_three(self):
@@ -128,7 +129,7 @@ class TestTopologyMap(TestCase):
         self.tm.set_z(point.translate(-1, -1), 99)
         self.tm.set_z(point.translate(0, -1), 99)
         self.tm.set_z(point.translate(1, -1), 99)
-        candidates = self.tm.get_highest_adjacent_points_as_directions(point)
+        candidates = self.tm.get_highest_adjacent_offsets(point)
         self.assertEqual([(-1, -1), (0, -1), (1, -1)], candidates)
 
     def test_populate_from_matrix(self):

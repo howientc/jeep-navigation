@@ -1,4 +1,4 @@
-from geometry.point2d import Point2D
+from geometry.point import Point2D, ORIGIN
 
 OUT_OF_BOUNDS = float("-inf")
 NO_BOUNDS = float("inf")
@@ -27,7 +27,7 @@ class TopologyMap(object):
         self._lower_left = None
         self._upper_right = None
 
-    def populate_from_matrix(self, topology_matrix, origin=Point2D(0, 0), set_bounds=True):
+    def populate_from_matrix(self, topology_matrix, origin=ORIGIN, set_bounds=True):
         """
         Populates the map from a matrix. Mostly useful in testing, but someday we might want to preload one or more
         matrices of data into our maps
@@ -47,12 +47,13 @@ class TopologyMap(object):
 
         if set_bounds:
             self._lower_left_bounds = origin
-            self._upper_right_bounds = Point2D(origin.x + width -1, origin.y + height -1)
+            self._upper_right_bounds = Point2D(origin.x + width - 1, origin.y + height - 1)
 
-    def get_z(self, point):
+    def get_z(self, point, default=None):
         """
         Gets z value (height) at a point. If out of bounds, returns OUT_OF_BOUNDS
         :param point:
+        :param default:
         :return:
         """
         # Handle cases where the point lies off the topology (out of bounds)
@@ -62,7 +63,8 @@ class TopologyMap(object):
         if self._upper_right_bounds and (point.x > self._upper_right_bounds.x or point.y > self._upper_right_bounds.y):
             return OUT_OF_BOUNDS
 
-        return self._known_z.get(point)
+        found = self._known_z.get(point)
+        return found if found else default
 
     def set_z(self, point, height):
         """
@@ -87,7 +89,7 @@ class TopologyMap(object):
         one square unit of space, make sure to add 1 to the both dimensions
         :return:
         """
-        return 1 + self._upper_right.x - self._lower_left.x, 1+ self._upper_right.y - self._lower_left.y
+        return 1 + self._upper_right.x - self._lower_left.x, 1 + self._upper_right.y - self._lower_left.y
 
     @property
     def boundary_points(self):
@@ -102,17 +104,16 @@ class TopologyMap(object):
         Generates all of the points in the map as x,y,z in no specific order
         :return:
         """
-        for pt, z in self._known_z.items():
-            yield pt.x, pt.y, z
+        return ((pt.x, pt.y, z) for pt, z in self._known_z.items())
 
-    def iter_cells_around_point(self, point, cells):
+    def iter_offsets_around_point(self, point, offsets):
         """
         Generates adjacent points for each offset in cells
         :param point: The reference point
-        :param cells: A list containing (x,y) offsets from the point
+        :param offsets: A list containing (x,y) offsets from the point
         :return: generator yielding x,y,z,pt
         """
-        for (x, y) in cells:
+        for (x, y) in offsets:
             pt = point.translate(x, y)
             z = self._known_z.get(pt)
             yield x, y, z, pt
@@ -124,7 +125,10 @@ class TopologyMap(object):
         :param point: center point
         :return: generator yielding x, y, z, pt
         """
-        return self.iter_cells_around_point(point, iter_adjacent_cells_in_radius(radius))
+        return self.iter_offsets_around_point(point, iter_adjacent_offsets_in_radius(radius))
+
+    def unknown_adjacent_offsets(self, point, radius=1):
+        return [(x, y) for x, y, known, pt in self.iter_adjacent_points(point, radius) if not known]
 
     def iter_self_and_adjacent_points(self, point, radius=1):
         """
@@ -133,7 +137,7 @@ class TopologyMap(object):
         :param point: center point
         :return: generator yielding x, y, z, pt
         """
-        return self.iter_cells_around_point(point, iter_cells_in_radius(radius))
+        return self.iter_offsets_around_point(point, iter_offsets_in_radius(radius))
 
     def count_unknown_points_at_and_adjacent_to_point(self, point, radius=1):
         """
@@ -144,7 +148,7 @@ class TopologyMap(object):
         """
         return sum(z is None for _x, _y, z, _pt in self.iter_self_and_adjacent_points(point, radius))
 
-    def is_highest_of_known_adjacent(self, point, radius=1):
+    def is_highest_of_adjacent_points(self, point, radius=1):
         """
         Sees if the point is equal or higher than all points adjacent to it on the condition
         that all of the adjacent points have already been scanned
@@ -162,7 +166,7 @@ class TopologyMap(object):
                 return False
         return True
 
-    def get_highest_adjacent_points_as_directions(self, point, radius=1):
+    def get_highest_adjacent_offsets(self, point, radius=1):
         """
         Figures out the list of highest points around a given point
         :param radius:
@@ -178,7 +182,7 @@ class TopologyMap(object):
         return candidates
 
 
-def iter_cells_in_radius(radius=1):
+def iter_offsets_in_radius(radius=1):
     """
     Convenience method to walk through all cells in a given radius
     :param radius:
@@ -188,10 +192,10 @@ def iter_cells_in_radius(radius=1):
     return ((x, y) for y in size for x in size)
 
 
-def iter_adjacent_cells_in_radius(radius=1):
+def iter_adjacent_offsets_in_radius(radius=1):
     """
     Convenience method to walk through all cells in a given radius, excluding the center
     :param radius:
     :return: yields x,y offsets from the center
     """
-    return ((x, y) for (x, y) in iter_cells_in_radius(radius) if x != 0 or y != 0)
+    return ((x, y) for (x, y) in iter_offsets_in_radius(radius) if x != 0 or y != 0)

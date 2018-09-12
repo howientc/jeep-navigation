@@ -1,5 +1,5 @@
 import logging
-from geometry.point2d import Point2D
+from geometry.point import Point3D
 
 
 class Drone(object):
@@ -10,7 +10,7 @@ class Drone(object):
         :param navigator:
         :param topology_sensors:
         """
-        self._coords = Point2D(0, 0)
+        self._coords = Point3D(0, 0, 0)
         self._topology_sensors = topology_sensors
         self._navigator = navigator
 
@@ -25,11 +25,11 @@ class Drone(object):
         :return:
         """
         self._coords = point
-        logging.info("Drone moved to ", point)
+        logging.info("Drone moved to " + repr(point))
 
     def navigate_to_extraction_point(self, start_point):
-        logging.info("Start point is ", start_point)
-        self._coords = start_point  # set start position without calling move_to
-        for point in self._navigator.iter_points_to_destination(start_point=start_point,
-                                                                topology_sensors=self._topology_sensors):
-            self.move_to(point)
+        logging.info("Start point is " + repr(start_point))
+        self._coords = Point3D(start_point.x, start_point.y, 0)  # set start position without calling move_to
+        for point3d in self._navigator.iter_points_to_destination(start_point=start_point,
+                                                                  topology_sensors=self._topology_sensors):
+            self.move_to(point3d)

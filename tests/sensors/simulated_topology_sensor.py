@@ -18,7 +18,7 @@ class SimulatedTopologySensor(TopologySensor):
         we use it to lookup into the simulated topology
         :param offsets: A list of (x,y) tuples to scan
         :param home_point: the physical point at 0,0
-        :return: tuple(a list of of tuples (x,y,z, point) corresponding to the values of points that were read, scan cost)
+        :return: tuple(a list of tuples (x,y,z, point) corresponding to the values of points that were read, scan cost)
         """
         scanned_points = []
         for x, y in offsets:
