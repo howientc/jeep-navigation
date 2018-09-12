@@ -1,7 +1,52 @@
 from topology.topology_map import TopologyMap
 from geometry.point2d import Point2D
-from collections import OrderedDict
 from random import randint
+import math
+
+
+def make_topology_map_from_seed_points_xyz(seeds_xyz, lower_left, upper_right, style='cone'):
+    """
+    Creates a TopologyMap from seed points. The seed points are local or global maximums, and then
+    surrounding points are lower and lower with distance. 'cone' style has peaks shaped like cones,
+    'pyramid' style shapes them like 4 sided pyramids. Note that where peaks would collide, the valleys
+    are not smoothed. It is possible to have more "extraction points" (summits or flat areas) than given
+    in the seeds due to the way the peaks collide
+
+    :param seeds_xyz: e.g. [(15,6,69), (21,11,52), (3, 4, 34)]
+    :param lower_left: Lower left corner of map
+    :param upper_right: Upper left corner of map
+    :param style: 'cone' or 'pyramid' which determines curve shape
+    :return: TopologyMap the created map
+    """
+    tm = TopologyMap()
+
+    def distance(x1, y1, x2, y2):
+        # linear distance between (x1,y1) and (x2,y2)
+        return math.hypot(x2 - x1, y2 - y1)
+
+    def linear_distance(x, y, pt):
+        # return z value in a cone pattern from pt
+        return round(pt[2] - distance(x, y, pt[0], pt[1]))
+
+    def max_orthogonal_distance(x, y, pt):
+        # return z value in a pyramid pattern from pt
+        return round(pt[2] - max(abs(pt[0] - x), abs(pt[1] - y)))
+
+    if style == 'cone':
+        z_func = linear_distance
+    elif style == 'pyramid':
+        z_func = max_orthogonal_distance
+    else:
+        raise Exception('Unknown Style:' + style)
+
+    # Go through all points. Pick the closest seed to the point, and calculate its z value and insert it
+    for y in range(lower_left.y, upper_right.y + 1):
+        for x in range(lower_left.x, upper_right.x + 1):
+            pt = min(seeds_xyz, key=lambda p: distance(x, y, p[0], p[1]))  # closest point
+            z = z_func(x, y, pt)  # apply style to get z
+            tm.set_z(Point2D(x, y), z)
+
+    return tm
 
 
 def random_xyz(number_of_seeds, lower_left, upper_right, max_z):
@@ -24,49 +69,19 @@ def random_xyz(number_of_seeds, lower_left, upper_right, max_z):
     return [(pt.x, pt.y, z) for pt, z in found.items()]
 
 
-def make_topology_map_from_seed_points_xyz(list_of_xyz, lower_left, upper_right):
-    """
-    Creates a TopologyMap from seed points, such that the seed points are inserted, and then each
-    of their surrounding points is one lower. Then process these surrounding points in the same way.
-    However, if a point has already been determined, then don't change its height.
-    :param list_of_xyz: e.g. [(15,6,69), (21,11,52), (3, 4, 34)]
-    :param lower_left: Lower left corner of map
-    :param upper_right: Upper left corner of map
-    :return: TopologyMap the created map
-    """
-    tm = TopologyMap()
-
-    # calculate our map's extents
-    x_range = range(lower_left.x, upper_right.x + 1)
-    y_range = range(lower_left.y, upper_right.y + 1)
-
-    def process_seeds(seeds):
-        """
-        Performs breadth-first recursion to process points according to the rules described above
-        :param seeds: a dictionary containing the seed points
-        """
-        children = OrderedDict()  # keep track of children to process. Keep order for repeatability
-        for pt, z in seeds.items():
-            tm.set_z(pt, z)  # add the point
-            # We care about unknown adjacent points in our range
-            for _x, _y, known, apt in tm.iter_adjacent_points(pt):
-                if not known and apt.x in x_range and apt.y in y_range:
-                    children[apt] = z - 1  # use any value since we're using the OrderedDict as a set
-        if children:
-            process_seeds(children)
-
-    # populate a dictionary with the initial seeds
-    seeds = {Point2D(x, y): z for x, y, z in list_of_xyz} # Note order here not guaranteed
-
-    process_seeds(seeds)
-
-    return tm
-
-
 def generate_random_topology(number_of_seeds=5, lower_left=Point2D(0, 0), upper_right=Point2D(20, 20), max_z=None):
+    """
+    Generates a topology to test with. It is possible that the resulting topology could have more "extraction points"
+    (peaks or flat areas) than the number of seeds because of the way the generated peaks collide.
+    :param number_of_seeds: How many high points
+    :param lower_left: lower-left point
+    :param upper_right: upper-right point
+    :param max_z: Maximum z value to generate
+    :return: generated topology map
+    """
     if not max_z:
         biggest_axis = max(upper_right.x - lower_left.x, upper_right.y - lower_left.y)
         max_z = biggest_axis // 2  # Just need a rule here. how about max height is half width?
 
     seeds = random_xyz(number_of_seeds, lower_left, upper_right, max_z)
-    return make_topology_map_from_seed_points_xyz(seeds, lower_left, upper_right)
+    return make_topology_map_from_seed_points_xyz(seeds, lower_left, upper_right, 'cone')

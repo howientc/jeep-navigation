@@ -48,7 +48,7 @@ class DroneFactory(object):
         return highest_of_adjacent
 
     @staticmethod
-    def make_drone(move_strategy, topology_sensors):
+    def make_drone(move_strategy, topology_sensors, topology_map=None):
         """
         Factory method to make a drone. Accepts either objects or Enums as arguments.
         We can use a variety of sensors, navigation strategies, and rules, and then we pass the chosen ones
@@ -61,7 +61,8 @@ class DroneFactory(object):
 
         # Map of known areas of the topology. In the future, we could persist this map and then
         # reuse it for this or any drone on subsequent missions
-        topology_map = TopologyMap()
+        if not topology_map:
+            topology_map = TopologyMap()
 
         # convert the passed-in sensor list to actual sensors in case enums were passed in
         sensors = [s if isinstance(s, TopologySensor) else DroneFactory.make_sensor(s) for s in topology_sensors]
