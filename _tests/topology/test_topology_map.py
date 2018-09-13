@@ -1,5 +1,5 @@
 from unittest import TestCase
-from topology.topology_map import TopologyMap, iter_offsets_in_radius, iter_adjacent_offsets_in_radius, OUT_OF_BOUNDS
+from topology.topology_map import TopologyMap, OUT_OF_BOUNDS
 from geometry.point import Point2D, ORIGIN
 from _tests.topology.topology_factory import TopologyFactory
 

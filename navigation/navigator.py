@@ -18,13 +18,12 @@ class Navigator(object):
         point = start_point
         found = False
         while not found:  # keep generating points until done
-            path, found = self._determine_next_path(point, topology_sensors)
+            new_point, found = self._determine_next_point(point, topology_sensors)
             # Now that we know the previouis point's z, yield that point
-            yield Point3D(point.x, point.y, self._topology_map.get_z(point))
-            point = path[0]   # TODO
+            previous_point3d = Point3D(point.x, point.y, self._topology_map.get_z(point))
+            yield previous_point3d
+            point = new_point
 
-        # need to yield the destination point
-        yield Point3D(point.x, point.y, self._topology_map.get_z(point))
 
     @staticmethod
     def choose_best_sensor(topology_sensors, adjacent_points):
@@ -45,15 +44,15 @@ class Navigator(object):
         cheapest_sensor = min(topology_sensors, key=lambda sensor: sensor.estimate_cost_to_scan(adjacent_points))
         return cheapest_sensor
 
-    def _determine_next_path(self, point, topology_sensors):
+    def _determine_next_point(self, point, topology_sensors):
         """
-        Figures out where to go next. Will get information from a sensor and then look at the map to see
-        if it's discovered an destination point. It actually returns a path which is usually a list of a single point,
-        but can be multiple points. It also returns whether a destination was reached
+        Figures out what point to visit next. Will get information from a sensor and then look at the map to see
+        if it's discovered an destination point. It also returns whether a destination was reached
         :param point: Point2D probably representing the current location
-        :return: tuple(list(Point2D), bool): (Path where to go next, bool is whether this point is an destination point
+        :return: tuple(Point2D, bool): (Point2D where to go next, bool is whether this point is a destination point
         """
         tm = self._topology_map  # for convenience
+
         candidates = self._scan_and_get_destination_point_candidates(point, topology_sensors)
 
         # Now that we have our candidates, let's see if we've got a destination point
@@ -62,14 +61,14 @@ class Navigator(object):
                 return candidate_point, True  # Yes we found one.
 
         # What are the the directions to biggest points adjacent to where we are now?
-        highest_directions = tm.get_highest_adjacent_offsets(point)
+        highest_directions = [(x, y) for x, y,_z, _pt in tm.list_highest_x_y_z_pt_in_radius(point)]
 
-        next_path = self._move_strategy(tm, point, highest_directions)
-        return next_path, False
+        next_point = self._move_strategy(tm, point, highest_directions)
+        return next_point, False
 
     def _scan_and_get_destination_point_candidates(self, point, topology_sensors):
         """
-        Figures out what points need to be scanned around the given point, then picks a sensor which does the job.
+        Figures out the points need to be scanned at and around the given point, then picks a sensor which does the job.
         Stores the sensor results in the topology map. In the process, determines which points are candidates for
         being destination points
         :param point:
@@ -79,31 +78,32 @@ class Navigator(object):
         tm = self._topology_map  # for convenience
 
         # We will build up a set of cells that are candidates for being destination points.
-        candidates = set()
-        candidates.add(point)  # the current point is a candidate
+        destination_candidates = set()
+        destination_candidates.add(point)  # always need to check this point, even if we have its value already
 
+        # x,y points below are from the perspective of center point is (0,0)
         # let's figure out what offsets we need to scan
-        unknown_adjacent_cells = tm.unknown_adjacent_offsets(point)
+        unknown_xy = tm.list_unknown_x_y_in_radius(point)
 
-        if unknown_adjacent_cells:  # if we need to scan. Most of time we will
-
+        if unknown_xy:  # Likely always true
             # if we've got many sensors, choose the best (cheapest) one for the job
-            sensor = Navigator.choose_best_sensor(topology_sensors, unknown_adjacent_cells)
+            sensor = Navigator.choose_best_sensor(topology_sensors, unknown_xy)
             sensor.turn_on()
             sensor.increment_power_on_count()
 
             # ask the sensor to scan the unknown adjacent points. It might return MORE than what we asked for, so
             # we need to use the returned list as the scanned list. We'll only process those points that are newly
             # known on our topology_map
-            scanned_points, scan_cost = sensor.scan_points(unknown_adjacent_cells, point)
+            scanned_points, scan_cost = sensor.scan_points(unknown_xy, point)
             for (_sx, _sy, sz, scanned_pt) in scanned_points:
                 if not tm.get_z(scanned_pt):  # if the sensor returned a point we don't know, process it
                     tm.set_z(scanned_pt, sz)  # save value in our topology map
-                    candidates.add(scanned_pt)
+                    destination_candidates.add(scanned_pt)
                     # all unknown points adjacent to the scanned one are candidates too
-                    for adj_point in tm.unknown_adjacent_points(scanned_pt):
-                        candidates.add(adj_point)  # if might already be in thereif it was in scanned, which is fine
+                    # if scanned_pt != point:  # for all scans except original point, since we're handling it now
+                    for _adj_x, _adj_y, adj_point in tm.iter_unknown_x_y_pt_in_radius(scanned_pt):
+                        destination_candidates.add(adj_point)  # if might already be in thereif it was in scanned, which is fine
 
             sensor.turn_off()
-        return list(candidates)
+        return list(destination_candidates)
 

@@ -1,8 +1,6 @@
 from navigation.move_strategy import MoveStrategyType, make_move_strategy
 from navigation.navigator import Navigator
-
-class x:
-    pass
+from geometry.point import Point2D
 
 
 class NavigatorFactory(object):
@@ -11,7 +9,7 @@ class NavigatorFactory(object):
     def make_navigator(topology_map, move_strategy,
                        func_is_destination_point=None):
         if not func_is_destination_point:
-            func_is_destination_point = NavigatorFactory.func_is_extraction_point
+            func_is_destination_point = NavigatorFactory.func_is_extraction_point()
 
         if isinstance(move_strategy, MoveStrategyType):
             move_strategy = make_move_strategy(move_strategy)
@@ -37,6 +35,6 @@ class NavigatorFactory(object):
             :param point:
             :return:
             """
-            return topology_map.is_highest_of_adjacent_points(point)
+            return topology_map.is_highest_or_tie_in_radius(point)
 
         return highest_of_adjacent

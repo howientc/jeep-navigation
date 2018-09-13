@@ -80,11 +80,11 @@ A more efficient strategy would be to move 3 units in the direction instead of j
 anything by doing this. That is, except if you moved on a diagonal. Imagine this is the real topology, where 
 
     0 0 0 | 0 0 0
-    0 0 0 | 0 2 0
-    0 0 4 | 3 0 0
+    0 b 0 | 0 2 0
+    0 8 9 | 6 0 0
     ------+------
-    0 0 9 | 5 0 0
-    0 1 0 | 0 0 0
+    0 0 7 | 10 0 0
+    0 1 9 | 0 a 0
     0 0 0 | 0 0 0
     
 Say you start in the lower left, where the height 1 is. Your scan would be of the lower left quadrant. The scan finds the 9 cell in the 
@@ -98,15 +98,8 @@ we'd like. Given that half of the adjacent cells are corners, you'd be moving on
 
 You could at least say that if an edge and a corner are tied for highest, prefer moving towards the edge. This would help some.
 
-#### Smart oridinal strategy
-When the scan shows a corner cell is the highest, you'll determine a path that gets you to the cell (3,3) away by also visiting the
-cells (0,3) away and (3,0) away. In other words. In our example, we might move up, right, and then down, ending in the lower right
-quadrant. To determine this path, you'd look at the map and see if you've already been to those cells, and if so, skip them.
-
-Like always, after you scan, you'd check to see if you determined an extraction point, and if so stop. However, now, you'll wait until
-you've visited all three cells on your "diagonal path" before determining where to go next. This determination can be done either
-by just picking the direction based on the diagonal cell (even if we're not currently there), or using the maximum height of all
-newly scanned 3x3 areas for guidance (which, as always, is guaranteed to contain our highest known cell).
+Optimizing diagonal movement is tricky because we could miss an extraction point if we don't check all possibilities
+surrounding the point. We could always visit cardinal points, but that might be more costly
 
 #### Advanced Heuristics
 As it turns out, real-world topology isn't a bunch of random points. It's likely made up of slopes which end in peaks before going

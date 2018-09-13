@@ -5,8 +5,7 @@ from geometry.point import Point2D
 class MoveStrategyType(Enum):
     NAIVE_MOVE_ONE = auto()
     MOVE_3_CARDINAL_1_ORDINAL = auto()
-    SMART_ORIDINAL = auto()
-    MOVE_N_CARDINAL_M_ORDINAL = auto()
+    RIDGELINE = auto()
 
 
 def make_move_strategy(s):
@@ -14,8 +13,8 @@ def make_move_strategy(s):
         return MoveStrategy(cardinal_move_amount=1, ordinal_move_amount=1)
     elif s == MoveStrategyType.MOVE_3_CARDINAL_1_ORDINAL:
         return MoveStrategy(cardinal_move_amount=3, ordinal_move_amount=1)
-    elif s == MoveStrategyType.SMART_ORIDINAL:
-        return SmartOrdinalStrategy(cardinal_move_amount=3, ordinal_move_amount=3)
+    elif s == MoveStrategyType.RIDGELINE:
+        return RidgelineStrategy(cardinal_move_amount=10, switch_to=MOVE_3_CARDINAL_1_ORDINAL)
     else:
         raise KeyError('Unknown strategy type')
 
@@ -31,7 +30,7 @@ class MoveStrategy(object):
                  '_prefer_cardinal_to_ordinal']
 
     def __init__(self, cardinal_move_amount=1, ordinal_move_amount=1, prefer_moving_to_lesser_known_points=True,
-                 prefer_cardinal_to_ordinal=True):
+                 prefer_cardinal_to_ordinal=False):
         self._cardinal_move_amount = cardinal_move_amount
         self._ordinal_move_amount = ordinal_move_amount
         self._prefer_moving_to_lesser_known_points = prefer_moving_to_lesser_known_points
@@ -45,8 +44,8 @@ class MoveStrategy(object):
         :param directions: list of directions to consider
         :return: a list containing one element, the point to move to
         """
-        new_point = self._determine_new_point(topology_map, point, directions)
-        return [new_point]
+        new_point, cardinal = self._determine_new_point(topology_map, point, directions)
+        return new_point
 
     def _choose_candidate_directions(self, directions):
         """
@@ -56,9 +55,9 @@ class MoveStrategy(object):
         """
         edges = edges_only(directions)
         corners = corners_only(directions)
-        if self._prefer_cardinal_to_ordinal or not corners:
-            return edges, True
-        return corners, False
+        if corners and (self._prefer_cardinal_to_ordinal or not edges):
+            return corners, True
+        return edges, False
 
     def _determine_new_point(self, topology_map, point, directions):
         candidate_directions, cardinal = self._choose_candidate_directions(directions)
@@ -68,22 +67,26 @@ class MoveStrategy(object):
 
         # sort candidate points by how well we know the points around them
         sorted_move_points = sorted(move_points,
-                                    key=lambda pt: topology_map.count_unknown_points_at_and_adjacent_to_point(pt))
+                                    key=lambda pt: topology_map.count_unknown_in_radius(pt))
         # pick least or most known point, based on our preference
         new_point = sorted_move_points[-1] if self._prefer_moving_to_lesser_known_points else sorted_move_points[0]
         return new_point, cardinal
 
 
-class SmartOrdinalStrategy(MoveStrategy):
-    def __call__(self, topology_map, point, directions):
-        new_point, cardinal = self._determine_new_point(topology_map, point, directions)
-        if cardinal:  # if moving cardinally, then we'll just return the point
-            return [new_point]
+class RidgelineStrategy(MoveStrategy):
+    __slots__ = ['_switch_to', '_switch_to_strategy']
 
-        # For now just go right, up, then left. We could, in theory, check if we've already scanned at the points
-        # and not bother moving there
-        path = [Point2D(new_point.x, point.y), new_point, Point2D(point.x, new_point.y)]
-        return path  # TODO consider optimizing the path by removing a point if it's already been seen
+    def __init__(self, cardinal_move_amount, switch_to):
+        super().__init__(self, cardinal_move_amount=cardinal_move_amount)
+        self._switch_to = switch_to
+        self._switch_to_strategy = None
+
+    def __call__(self, topology_map, point, directions):
+        if self._switch_to_strategy:
+            return self._switch_to_strategy(topology_map, point, directions)
+
+        # TODO implement binary search and switch when ridge found
+        raise Exception("RidgelineStrategy is not implemented yet")
 
 
 def edges_only(directions):
