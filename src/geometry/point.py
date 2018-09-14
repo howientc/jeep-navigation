@@ -28,6 +28,9 @@ class Point2D(object):
     def max_orthogonal_distance(self, other):
         return max(abs(self.x - other.x), abs(self.y - other.y))
 
+    def to_tuple(self):
+        return self.x, self.y
+
     @property
     def x(self):
         return self._x
@@ -64,6 +67,12 @@ class Point3D(Point2D):
 
     def distance(self, other):
         return math.sqrt(self.x ** 2 + self.y ** 2 + self.z ** 2)
+
+    def to_tuple(self):
+        return self.x, self.y, self.z
+
+    def to_2d(self):
+        return Point2D(self.x, self.y)
 
     def __hash__(self):
         return hash(str(self.x) + '/' + str(self.y) + '/' + str(self.z))

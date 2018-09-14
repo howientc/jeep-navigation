@@ -3,6 +3,7 @@ from navigation.navigator_factory import NavigatorFactory
 from sensors.topology_sensor import TopologySensor
 from topology.topology_map import TopologyMap
 from drone.drone import Drone
+from navigation.destinations import ExtractionPoint
 
 
 class TopologySensorType(Enum):
@@ -45,9 +46,9 @@ class DroneFactory(object):
         # convert the passed-in sensor list to actual sensors in case enums were passed in
         sensors = [s if isinstance(s, TopologySensor) else DroneFactory.make_sensor(s) for s in topology_sensors]
 
-        func_is_destination_point = NavigatorFactory.func_is_extraction_point()
+        destination = ExtractionPoint()
         navigator = NavigatorFactory.make_navigator(topology_map=topology_map,
                                                     move_strategy=move_strategy,
-                                                    func_is_destination_point=func_is_destination_point)
+                                                    destination=destination)
 
         return Drone(navigator, topology_sensors=sensors)

@@ -161,7 +161,7 @@ class TopologyMap(object):
         :return: True if the point is highest (or tied), False if not, or not all of the adjacent
         points are known
         """
-        if self.count_unknown_in_radius(point,radius):
+        if self.count_unknown_in_radius(point, radius):
             return False
         for _x, _y, z, pt in self.list_highest_x_y_z_pt_in_radius(point, radius):
             if pt == point:

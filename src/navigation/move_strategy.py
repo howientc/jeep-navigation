@@ -1,27 +1,39 @@
 from enum import Enum, auto
-from geometry.point import Point2D
 
 
 class MoveStrategyType(Enum):
-    NAIVE_MOVE_ONE = auto()
-    MOVE_3_CARDINAL_1_ORDINAL = auto()
-    RIDGELINE = auto()
+    CLIMB_MOVE_1 = auto()
+    CLIMB_3_CARDINAL_1_ORDINAL = auto()
+    FIND_RIDGELINE_THEN_CLIMB_3_CARDINAL_1_ORDINAL = auto()
+    SPIRAL_OUT_CW = auto()
+    SPIRAL_OUT_CCW = auto()
+
+
+# For SpiralOutStrategy
+CCW = ((0, 1), (-1, 0), (0, -1), (1, 0))  # Counter-clockwise rotation
+CW = ((0, 1), (1, 0), (0, -1), (-1, 0))  # Clockwise rotation
+BINARY_SEARCH_MOVE_AMOUNT = 10
 
 
 def make_move_strategy(s):
-    if s == MoveStrategyType.NAIVE_MOVE_ONE:
-        return MoveStrategy(cardinal_move_amount=1, ordinal_move_amount=1)
-    elif s == MoveStrategyType.MOVE_3_CARDINAL_1_ORDINAL:
-        return MoveStrategy(cardinal_move_amount=3, ordinal_move_amount=1)
-    elif s == MoveStrategyType.RIDGELINE:
-        return RidgelineStrategy(cardinal_move_amount=10, switch_to=MOVE_3_CARDINAL_1_ORDINAL)
+    if s == MoveStrategyType.CLIMB_MOVE_1:
+        return ClimbStrategy(cardinal_move_amount=1, ordinal_move_amount=1)
+    elif s == MoveStrategyType.CLIMB_3_CARDINAL_1_ORDINAL:
+        return ClimbStrategy(cardinal_move_amount=3, ordinal_move_amount=1)
+    elif s == MoveStrategyType.FIND_RIDGELINE_THEN_CLIMB_3_CARDINAL_1_ORDINAL:
+        return RidgelineStrategy(move_amount=BINARY_SEARCH_MOVE_AMOUNT,
+                                 switch_to=MoveStrategyType.CLIMB_3_CARDINAL_1_ORDINAL)
+    elif s == MoveStrategyType.SPIRAL_OUT_CW:
+        return SpiralOutStrategy(CW)
+    elif s == MoveStrategyType.SPIRAL_OUT_CCW:
+        return SpiralOutStrategy(CCW)
     else:
         raise KeyError('Unknown strategy type')
 
 
-class MoveStrategy(object):
+class ClimbStrategy(object):
     """
-    A move strategy is just a function which receives (topology_map, point, directions).
+    A climb strategy is just a function which receives (topology_map, point, directions).
     If a strategy requires keeping track of its state, then it needs to be an object. To get objects
     to behave like functions, we must use functors. To make a functor, define the __call__ method in
     the class.
@@ -36,15 +48,20 @@ class MoveStrategy(object):
         self._prefer_moving_to_lesser_known_points = prefer_moving_to_lesser_known_points
         self._prefer_cardinal_to_ordinal = prefer_cardinal_to_ordinal
 
-    def __call__(self, topology_map, point, directions):
+    def __call__(self, topology_map, point, destination):
         """
         Functor function: i.e. my_move_strategy(topology_map, point, directions)
         :param topology_map: unused
         :param point: current point we're at
-        :param directions: list of directions to consider
+        :param destination: Destination object
         :return: a list containing one element, the point to move to
         """
-        new_point, cardinal = self._determine_new_point(topology_map, point, directions)
+
+        # climb strategy wants to move up, so lets find highest points
+        radius = destination.radius_needed_to_check
+        directions = [(x, y) for x, y, _z, _pt in topology_map.list_highest_x_y_z_pt_in_radius(point, radius)]
+
+        new_point, cardinal = self._determine_new_point(topology_map, point, directions, radius)
         return new_point
 
     def _choose_candidate_directions(self, directions):
@@ -55,11 +72,11 @@ class MoveStrategy(object):
         """
         edges = edges_only(directions)
         corners = corners_only(directions)
-        if corners and (self._prefer_cardinal_to_ordinal or not edges):
-            return corners, True
-        return edges, False
+        if edges and (self._prefer_cardinal_to_ordinal or not corners):
+            return edges, True
+        return corners, False
 
-    def _determine_new_point(self, topology_map, point, directions):
+    def _determine_new_point(self, topology_map, point, directions, radius):
         candidate_directions, cardinal = self._choose_candidate_directions(directions)
         move_amount = self._cardinal_move_amount if cardinal else self._ordinal_move_amount
         # let's get the points that we'd move to
@@ -67,17 +84,17 @@ class MoveStrategy(object):
 
         # sort candidate points by how well we know the points around them
         sorted_move_points = sorted(move_points,
-                                    key=lambda pt: topology_map.count_unknown_in_radius(pt))
+                                    key=lambda pt: topology_map.count_unknown_in_radius(pt, radius))
         # pick least or most known point, based on our preference
         new_point = sorted_move_points[-1] if self._prefer_moving_to_lesser_known_points else sorted_move_points[0]
         return new_point, cardinal
 
 
-class RidgelineStrategy(MoveStrategy):
-    __slots__ = ['_switch_to', '_switch_to_strategy']
+class RidgelineStrategy(object):
+    __slots__ = ['_switch_to', '_switch_to_strategy', '_move_amount']
 
-    def __init__(self, cardinal_move_amount, switch_to):
-        super().__init__(self, cardinal_move_amount=cardinal_move_amount)
+    def __init__(self, move_amount, switch_to):
+        self._move_amount = move_amount
         self._switch_to = switch_to
         self._switch_to_strategy = None
 
@@ -87,6 +104,19 @@ class RidgelineStrategy(MoveStrategy):
 
         # TODO implement binary search and switch when ridge found
         raise Exception("RidgelineStrategy is not implemented yet")
+
+
+class SpiralOutStrategy(object):
+    def __init__(self, rotation=CW, step=1):
+        self._counter = 0
+        self._rotation = list(rotation)  # get rotation as point list
+        self._step = step
+
+    def __call__(self, topology_map, point, directions):
+        move_amount = self._step * (1 + self._counter // 2)
+        direction = self._rotation[self._counter % len(self._rotation)]
+        new_point = point.translate(direction[0] * move_amount, direction[1] * move_amount)
+        return new_point, True
 
 
 def edges_only(directions):

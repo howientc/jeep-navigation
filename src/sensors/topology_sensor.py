@@ -21,6 +21,10 @@ class TopologySensor(ABC):
         self._scan_point_count = 0  # how many time scans of individual cells are done
         self._total_cost = 0
 
+    @property
+    def radius(self):
+        return self._radius
+
     def increment_power_on_count(self):
         self._power_on_count += 1
 

@@ -1,6 +1,6 @@
 import unittest
-from _tests.sensors.simulated_topology_sensor import SimulatedTopologySensor
-from topology.topology_factory import TopologyFactory
+from tests.sensors.simulated_topology_sensor import SimulatedTopologySensor
+from tests.topology.topology_factory import TopologyFactory
 from topology.topology_map import OUT_OF_BOUNDS
 from geometry.point import Point2D
 

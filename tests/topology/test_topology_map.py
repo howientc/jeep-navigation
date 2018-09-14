@@ -1,7 +1,7 @@
 from unittest import TestCase
 from topology.topology_map import TopologyMap, OUT_OF_BOUNDS
 from geometry.point import Point2D, ORIGIN
-from _tests.topology.topology_factory import TopologyFactory
+from tests.topology.topology_factory import TopologyFactory
 
 TEST_MAP = [
     #    0  1  2  3  4  5  6
@@ -16,7 +16,7 @@ TEST_MAP = [
 
 def make_example_topology(origin=ORIGIN, set_bounds=True):
     """
-    Covenience method for other _tests to use the same example topology
+    Covenience method for other tests to use the same example topology
     :param origin: the lower-left corner. 0,0 by default
     :param set_bounds: Whether to limit the topology to the matrix bounds
     :return: a TopologyMap based on the TEST_MAP above
