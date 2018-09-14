@@ -3,7 +3,7 @@ import numpy as np
 import math
 
 
-def draw_path(path):
+def draw_path(ax, path):
     """
     Plot the path. The start and end will have special styling
     :param path:
@@ -12,7 +12,6 @@ def draw_path(path):
     # Plot start point
     start_x, start_y, start_z = path[0]
     plt.plot(start_x, start_y, 'ws')  # start is a white square
-
     # Plot middle points
     if len(path) > 2:
         x_vals, y_vals, _z_vals = zip(*path)  # convert into X,Y,Z arrays
@@ -22,6 +21,10 @@ def draw_path(path):
     end_x, end_y, end_z = path[-1]
     plt.plot(end_x, end_y, 'r^')  # endpoint is a red diamond
 
+    offset = .25
+    for i, point in enumerate(path):
+        plt.text(point[0]-offset, point[1]-offset, str(i))
+
 
 def plot_topology_map(topology_map, func_get_path):
     """
@@ -29,6 +32,8 @@ def plot_topology_map(topology_map, func_get_path):
     :param topology_map:
     :return:
     """
+    plt.rcParams.update({'font.size': 44})
+
     lower_left, upper_right = topology_map.boundary_points
     width, height = topology_map.width_and_height
     grid = np.zeros((height, width))
@@ -58,7 +63,7 @@ def plot_topology_map(topology_map, func_get_path):
         cy = math.floor(round(event.ydata))
 
         path = func_get_path(cx, cy)  # get a new path from the click origin
-        draw_path(path)
+        draw_path(ax, path)
         plt.title("Start:({},{}), Destination: ({},{})".format(cx, cy, path[-1][0], path[-1][1]))
 
         fig.canvas.draw()
@@ -66,5 +71,10 @@ def plot_topology_map(topology_map, func_get_path):
     cid = fig.canvas.mpl_connect('button_press_event', on_click)
     plt.title("Click a point to navigate from it to high ground")
     fig.canvas.set_window_title("Plot Path Example")
+
+    # make window big
+    mng = plt.get_current_fig_manager()
+    mng.resize(*mng.window.maxsize())
+
     plt.show()
     # I am not sure how to get rid of that toolbar
