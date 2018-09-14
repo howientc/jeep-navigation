@@ -36,7 +36,7 @@ class Drone(object):
         of increased power use due to overcoming gravity
         - Keep track of distance covered
         :param point: 2D point
-        :return:
+        :return: path of points. last point is the destination
         """
         self._coords = point
         logging.info("Drone moved to " + repr(point))
@@ -49,12 +49,15 @@ class Drone(object):
             dispatcher.send(signal=Drone.SIGNAL_START, pt=start_point, sender=self)
 
         point3d = None
+        path = []
         for point3d in self._navigator.iter_points_to_destination(start_point=start_point,
                                                                   topology_sensors=self._topology_sensors):
             self.move_to(point3d)
+            path.append(point3d)
             # Notify any observers that the drone moved
             if dispatcher:
                 dispatcher.send(signal=Drone.SIGNAL_MOVED, pt=point3d, sender=self)
 
         if dispatcher:
             dispatcher.send(signal=Drone.SIGNAL_DESTINATION, pt=point3d, sender=self)
+        return path

@@ -1,6 +1,6 @@
 from geometry.point import Point3D
 from topology.topology_map import TopologyMap
-
+import logging
 
 class Navigator(object):
 
@@ -13,21 +13,21 @@ class Navigator(object):
         self._topology_map = topology_map
         self._move_strategy = move_strategy
         self._destination = destination
-        self._path = []
         self._found = None
-
-    @property
-    def path(self):
-        return self._path
 
     @property
     def found(self):
         return self._found
 
     def reset(self):
-        self._path = []
+        """
+        Reset the navigator. Useful when testing
+        """
         self._found = None
         self._topology_map = TopologyMap()
+
+    # def fill_path_to_destination(self, start_point, toppology_sensors):
+    #     self._path = list(self.iter_points_to_destination(start_point, toppology_sensors))
 
     def iter_points_to_destination(self, start_point, topology_sensors):
         """
@@ -43,36 +43,25 @@ class Navigator(object):
         :return: (generator) next point to visit. generator ends when destination point is found
         """
         self.reset()  # in case we're recycling the navigator
-
+        tm = self._topology_map
         point = start_point
         while not self._found:  # keep generating points until done
             new_point = self._determine_next_point(point, topology_sensors)
 
             # Now that we know the previouis point's z, yield that point
-            previous_point3d = Point3D(point.x, point.y, self._topology_map.get_z(point))
-            self.path.append(previous_point3d)  # keep track of path
+            previous_point3d = tm.make_3d(point)
             yield previous_point3d
             point = new_point
 
-        yield Point3D(point.x, point.y, self._topology_map.get_z(point))
+        point = tm.make_3d(point)
+        yield point
+
         if point != self._found: # what we found might not have been visited yet
+            print("also returning fond")
             yield self._found
+        else:
+            print("skipping returning found", point, self._found)
 
-
-        # self.reset()  # in case we're recycling the navigator
-        #
-        # point = start_point
-        # found = False
-        # while not found:  # keep generating points until done
-        #     new_point, found = self._determine_next_point(point, topology_sensors)
-        #     # Now that we know the previouis point's z, yield that point
-        #     previous_point3d = Point3D(point.x, point.y, self._topology_map.get_z(point))
-        #     self.path.append(previous_point3d)  # keep track of path
-        #     yield previous_point3d
-        #     point = new_point
-        # # need to yield the last value
-        # yield Point3D(point.x, point.y, self._topology_map.get_z(point))
-        # self._found = point
 
     @staticmethod
     def choose_best_sensor(topology_sensors, adjacent_points):
@@ -108,8 +97,8 @@ class Navigator(object):
         # Now that we have our candidates, let's see if we've got a destination point
         for candidate_point in candidates:
             if self._destination(tm, candidate_point):
-                print("Found ", candidate_point)
-                self._found = candidate_point
+                self._found = tm.make_3d(candidate_point)
+                print("Found ", self._found)
                 break
 
         next_point = self._move_strategy(tm, point, self._destination)
@@ -130,6 +119,7 @@ class Navigator(object):
         # let's figure out what offsets we need to scan
         unknown_xy = tm.list_unknown_x_y_in_radius(point, self._destination.radius_needed_to_check)
         sensor = None
+        candidate_radius = 0
         if unknown_xy:  # Likely always true
             # if we've got many sensors, choose the best (cheapest) one for the job
             sensor = Navigator.choose_best_sensor(topology_sensors, unknown_xy)
@@ -146,10 +136,11 @@ class Navigator(object):
                     tm.set_z(scanned_pt, sz)
 
             sensor.turn_off()
-
-        # As it turns out, we now have many points that we need to check for being destinations. These points
-        # consist of all points in the scan radius, of course, and also, there could be points outside these bounds
-        # whose "destination status" can now be determined because of these bounds being filled in. It turns out
-        # that this radius is our sensor's radius + our destination radius
-        candidate_radius = sensor.radius + self._destination.radius_needed_to_check
+            # As it turns out, we now have many points that we need to check for being destinations. These points
+            # consist of all points in the scan radius, of course, and also, there could be points outside these bounds
+            # whose "destination status" can now be determined because of these bounds being filled in. It turns out
+            # that this radius is our sensor's radius + our destination radius
+            candidate_radius = sensor.radius + self._destination.radius_needed_to_check
+        else:
+            logging.warning("No unknown points found for point", point)
         return [pt for _x, _y, _z, pt in tm.iter_x_y_z_pt_in_radius(point, radius=candidate_radius)]

@@ -1,4 +1,4 @@
-from geometry.point import Point2D
+from geometry.point import Point2D, Point3D
 
 OUT_OF_BOUNDS = float("-inf")
 NO_BOUNDS = float("inf")
@@ -59,6 +59,14 @@ class TopologyMap(object):
         else:
             self._upper_right = Point2D(max(self._upper_right.x, point.x), max(self._upper_right.y, point.y))
             self._lower_left = Point2D(min(self._lower_left.x, point.x), min(self._lower_left.y, point.y))
+
+    def make_3d(self, point2d):
+        """
+        Converts a 2d point to a 3d one by looking up its z value
+        :param point2d:
+        :return: Point3D
+        """
+        return Point3D(point2d.x, point2d.y, self.get_z(point2d))
 
     @property
     def width_and_height(self):

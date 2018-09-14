@@ -18,19 +18,19 @@ class PlotPathExample(object):
         self.tm = TopologyFactory.make_fake_topology(upper_right=Point2D(20, 20))
 
         topology_sensors = [SimulatedTopologySensor(self.tm)]
-        move_strategy = MoveStrategyType.CLIMB_MOVE_1
-        # move_strategy = MoveStrategyType.CLIMB_3_CARDINAL_1_ORDINAL
+        # move_strategy = MoveStrategyType.CLIMB_MOVE_1
+        move_strategy = MoveStrategyType.CLIMB_3_CARDINAL_1_ORDINAL
         # move_strategy = MoveStrategyType.SPIRAL_OUT_CW
         self.drone = DroneFactory.make_drone(move_strategy=move_strategy,
                                              topology_sensors=topology_sensors)
 
     def navigate(self, x, y):
-        self.drone.navigate_to_extraction_point(Point2D(x, y))
-        path = self.drone.navigator.path
+        path = list(self.drone.navigate_to_extraction_point(Point2D(x, y)))
         found = self.drone.navigator.found
         # path.append(Point3D(found.x, found.y, 100))
         points = [pt.to_tuple() for pt in path]  # convert from Point3D list to tuple list
-        print("Found destination at", path[-1])
+        print("Found destination at", found)
+        print("last point is", points[-1])
         print(*points)
         return points
 

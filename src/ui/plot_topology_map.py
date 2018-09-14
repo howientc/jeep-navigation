@@ -1,4 +1,3 @@
-# https://matplotlib.org/gallery/frontpage/contour.html
 import matplotlib.pyplot as plt
 import numpy as np
 import math
@@ -12,16 +11,16 @@ def draw_path(path):
     """
     # Plot start point
     start_x, start_y, start_z = path[0]
-    plt.plot(start_x, start_y, 'ws')
+    plt.plot(start_x, start_y, 'ws')  # start is a white square
 
     # Plot middle points
     if len(path) > 2:
         x_vals, y_vals, _z_vals = zip(*path)  # convert into X,Y,Z arrays
-        plt.plot(x_vals[1:-1], y_vals[1:-1], 'mo')  # remove head and tail in plot
+        plt.plot(x_vals[1:-1], y_vals[1:-1], 'mo')  # remove head and tail in plot magenta circles
 
     # Plot end points
     end_x, end_y, end_z = path[-1]
-    plt.plot(end_x, end_y, 'r^')
+    plt.plot(end_x, end_y, 'r^')  # endpoint is a red diamond
 
 
 def plot_topology_map(topology_map, func_get_path):
@@ -46,7 +45,12 @@ def plot_topology_map(topology_map, func_get_path):
     extent = (lower_left.x - .5, upper_right.x + .5, lower_left.y - .5, upper_right.y + .5)
     ax.imshow(grid, origin='lower', extent=extent)
 
-    def onclick(event):
+    def on_click(event):
+        """
+        Calculates and displays new path from cicked point
+        :param event:
+        :return:
+        """
         plt.cla()
         ax.imshow(grid, origin='lower', extent=extent)
         # get closes integer points
@@ -55,11 +59,11 @@ def plot_topology_map(topology_map, func_get_path):
 
         path = func_get_path(cx, cy)  # get a new path from the click origin
         draw_path(path)
-        plt.title("Start = ({},{}), destination ({},{})".format(cx, cy, path[-1][0], path[-1][1]))
+        plt.title("Start:({},{}), Destination: ({},{})".format(cx, cy, path[-1][0], path[-1][1]))
 
         fig.canvas.draw()
 
-    cid = fig.canvas.mpl_connect('button_press_event', onclick)
+    cid = fig.canvas.mpl_connect('button_press_event', on_click)
     plt.title("Click a point to navigate from it to high ground")
     fig.canvas.set_window_title("Plot Path Example")
     plt.show()
