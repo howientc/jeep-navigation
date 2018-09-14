@@ -46,7 +46,7 @@ class Point2D(object):
         return (self.x, self.y) == (other.x, other.y)
 
     def __repr__(self):
-        return '(' + str(self.x) + ',' + str(self.y) + ')'
+        return '2d(' + str(self.x) + ',' + str(self.y) + ')'
 
 
 ORIGIN = Point2D(0, 0)
@@ -81,4 +81,4 @@ class Point3D(Point2D):
         return (self.x, self.y, self.z) == (other.x, other.y, other.z)
 
     def __repr__(self):
-        return '(' + str(self.x) + ',' + str(self.y) + ',' + str(self.z) + ')'
+        return '3d(' + str(self.x) + ',' + str(self.y) + ',' + str(self.z) + ')'

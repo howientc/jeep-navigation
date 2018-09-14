@@ -16,6 +16,7 @@ class Navigator(object):
         self._found = None
         self._scan_costs = dict()
 
+
     @property
     def found(self):
         return self._found
@@ -27,13 +28,11 @@ class Navigator(object):
     def get_scan_cost_at_point(self, point):
         pt = Point2D(point.x, point.y)
         cost = self._scan_costs.get(pt, 0)
-        print("scan cost at point", point, cost)
         return cost
 
     def set_scan_cost_at_point(self, point, value):
         pt = Point2D(point.x, point.y)
         self._scan_costs[pt] = value
-        print("set scan cost at point", point, value)
 
     def reset(self):
         """
@@ -43,6 +42,8 @@ class Navigator(object):
         self._topology_map = TopologyMap()
         self._scan_costs = dict()
 
+    def set_move_strategy(self, move_strategy):
+        self._move_strategy = move_strategy
 
     # def fill_path_to_destination(self, start_point, toppology_sensors):
     #     self._path = list(self.iter_points_to_destination(start_point, toppology_sensors))

@@ -27,6 +27,20 @@ class TopologyMap(object):
         self._lower_left = None
         self._upper_right = None
 
+    def point_is_out_of_bounds(self, point):
+        """
+        Sees if point lies within valid bounds. Mostly needed for test topologies
+        :param point:
+        :return:
+        """
+        if self._lower_left_bounds and (point.x < self._lower_left_bounds.x or point.y < self._lower_left_bounds.y):
+            return True
+
+        if self._upper_right_bounds and (point.x > self._upper_right_bounds.x or point.y > self._upper_right_bounds.y):
+            return True
+
+        return False
+
     def get_z(self, point, default=None):
         """
         Gets z value (height) at a point. If out of bounds, returns OUT_OF_BOUNDS
@@ -34,11 +48,7 @@ class TopologyMap(object):
         :param default:
         :return:
         """
-        # Handle cases where the point lies off the topology (out of bounds)
-        if self._lower_left_bounds and (point.x < self._lower_left_bounds.x or point.y < self._lower_left_bounds.y):
-            return OUT_OF_BOUNDS
-
-        if self._upper_right_bounds and (point.x > self._upper_right_bounds.x or point.y > self._upper_right_bounds.y):
+        if self.point_is_out_of_bounds(point):
             return OUT_OF_BOUNDS
 
         found = self._known_z.get(point)
@@ -123,6 +133,7 @@ class TopologyMap(object):
         :param point: center point
         :return: generator yielding x, y, z, pt
         """
+        point.translate(0,2)
         for (x, y) in iter_x_y_in_radius(radius):
             pt = point.translate(x, y)
             z = self._known_z.get(pt)
@@ -154,11 +165,15 @@ class TopologyMap(object):
 
     def list_highest_x_y_z_pt_in_radius(self, point, radius=1):
         # Figure out the max height by walking adjacent points and maxing on the z value
+        known = list(self.iter_known_x_y_z_pt_in_radius(point, radius))
+        if not known:
+            print("not known at", point)
+            return []
 
-        max_z = max(z for (_x, _y, z, _pt) in self.iter_known_x_y_z_pt_in_radius(point, radius))
+        max_z = max(z for (_x, _y, z, _pt) in known)
 
         # Now get the highest adjacent offsets as (x,y) tuples
-        return [(x, y, z, pt) for (x, y, z, pt) in self.iter_known_x_y_z_pt_in_radius(point, radius) if z == max_z]
+        return [(x, y, z, pt) for (x, y, z, pt) in known if z == max_z]
 
     def is_highest_or_tie_in_radius(self, point, radius=1):
         """
