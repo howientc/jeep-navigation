@@ -15,9 +15,12 @@ import random
 class PlotPathExample(object):
     def __init__(self):
         random.seed(100)  # for testing, we want to always genereate same map
-        self.tm = TopologyFactory.make_fake_topology(upper_right=Point2D(20, 20))
+        self.tm = TopologyFactory.make_fake_topology(upper_right=Point2D(32, 32))
+        laser = SimulatedTopologySensor(simulated_map=self.tm, power_on_cost=4, scan_point_cost=2)
+        radar = SimulatedTopologySensor(simulated_map=self.tm, power_on_cost=10, scan_point_cost=0)
+        topology_sensors = [laser, radar]
 
-        topology_sensors = [SimulatedTopologySensor(self.tm)]
+        # topology_sensors = [SimulatedTopologySensor(self.tm, )]
         # move_strategy = MoveStrategyType.CLIMB_MOVE_1
         move_strategy = MoveStrategyType.CLIMB_3_CARDINAL_1_ORDINAL
         # move_strategy = MoveStrategyType.SPIRAL_OUT_CW
@@ -26,9 +29,10 @@ class PlotPathExample(object):
 
     def navigate(self, x, y):
         path = list(self.drone.navigate_to_extraction_point(Point2D(x, y)))
-        found = self.drone.navigator.found
+        nav = self.drone.navigator
+        found = nav.found
         # path.append(Point3D(found.x, found.y, 100))
-        points = [pt.to_tuple() for pt in path]  # convert from Point3D list to tuple list
+        points = [(pt.x, pt.y, pt.z, nav.get_scan_cost_at_point(pt)) for pt in path]  # convert from Point3D list to tuple list
         print("Found destination at", found)
         print("last point is", points[-1])
         print(*points)

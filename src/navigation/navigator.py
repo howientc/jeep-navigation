@@ -1,4 +1,4 @@
-from geometry.point import Point3D
+from geometry.point import Point3D, Point2D
 from topology.topology_map import TopologyMap
 import logging
 
@@ -14,10 +14,26 @@ class Navigator(object):
         self._move_strategy = move_strategy
         self._destination = destination
         self._found = None
+        self._scan_costs = dict()
 
     @property
     def found(self):
         return self._found
+
+    @property
+    def scan_cost(self):
+        return sum(self._scan_costs.values())
+
+    def get_scan_cost_at_point(self, point):
+        pt = Point2D(point.x, point.y)
+        cost = self._scan_costs.get(pt, 0)
+        print("scan cost at point", point, cost)
+        return cost
+
+    def set_scan_cost_at_point(self, point, value):
+        pt = Point2D(point.x, point.y)
+        self._scan_costs[pt] = value
+        print("set scan cost at point", point, value)
 
     def reset(self):
         """
@@ -25,6 +41,8 @@ class Navigator(object):
         """
         self._found = None
         self._topology_map = TopologyMap()
+        self._scan_costs = dict()
+
 
     # def fill_path_to_destination(self, start_point, toppology_sensors):
     #     self._path = list(self.iter_points_to_destination(start_point, toppology_sensors))
@@ -45,6 +63,7 @@ class Navigator(object):
         self.reset()  # in case we're recycling the navigator
         tm = self._topology_map
         point = start_point
+        previous_point3d = None
         while not self._found:  # keep generating points until done
             new_point = self._determine_next_point(point, topology_sensors)
 
@@ -53,14 +72,20 @@ class Navigator(object):
             yield previous_point3d
             point = new_point
 
-        point = tm.make_3d(point)
-        yield point
+        # point = tm.make_3d(point)
 
-        if point != self._found: # what we found might not have been visited yet
-            print("also returning fond")
-            yield self._found
-        else:
-            print("skipping returning found", point, self._found)
+        if point.z is  None:
+            print("no z at ", point)
+            print("found", self._found)
+
+        if point.to_2d() != previous_point3d.to_2d():
+            yield point
+
+        # if point != self._found: # what we found might not have been visited yet
+        #     print("also returning fond")
+        #     yield self._found
+        # else:
+        #     print("skipping returning found", point, self._found)
 
 
     @staticmethod
@@ -98,8 +123,7 @@ class Navigator(object):
         for candidate_point in candidates:
             if self._destination(tm, candidate_point):
                 self._found = tm.make_3d(candidate_point)
-                print("Found ", self._found)
-                break
+                return self._found
 
         next_point = self._move_strategy(tm, point, self._destination)
         return next_point
@@ -118,7 +142,6 @@ class Navigator(object):
         # x,y points below are from the perspective of center point is (0,0)
         # let's figure out what offsets we need to scan
         unknown_xy = tm.list_unknown_x_y_in_radius(point, self._destination.radius_needed_to_check)
-        sensor = None
         candidate_radius = 0
         if unknown_xy:  # Likely always true
             # if we've got many sensors, choose the best (cheapest) one for the job
@@ -131,10 +154,10 @@ class Navigator(object):
             # ask the sensor to scan the unknown adjacent points. It might return MORE than what we asked for, so
             # we need to use the returned list as the scanned list.
             scanned_points, scan_cost = sensor.scan_points(unknown_xy, point)
+            self.set_scan_cost_at_point(point, scan_cost + sensor.power_on_cost)
             for (_sx, _sy, sz, scanned_pt) in scanned_points:
                 if not tm.get_z(scanned_pt):  # if the sensor returned a point we don't know, save it
                     tm.set_z(scanned_pt, sz)
-
             sensor.turn_off()
             # As it turns out, we now have many points that we need to check for being destinations. These points
             # consist of all points in the scan radius, of course, and also, there could be points outside these bounds

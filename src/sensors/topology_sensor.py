@@ -22,6 +22,10 @@ class TopologySensor(ABC):
         self._total_cost = 0
 
     @property
+    def power_on_cost(self):
+        return self._power_on_cost
+
+    @property
     def radius(self):
         return self._radius
 
