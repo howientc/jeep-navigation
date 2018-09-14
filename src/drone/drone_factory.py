@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+"""
+Factory class and helpers to simplify the creation of Drones
+"""
 from enum import Enum, auto
 from navigation.navigator_factory import NavigatorFactory
 from sensors.topology_sensor import TopologySensor
@@ -15,11 +19,14 @@ class TopologySensorType(Enum):
 
 
 class DroneFactory(object):
-
+    """
+    Factory which creates drones through a static method
+    """
     @staticmethod
     def make_sensor(sensor):
         """
-        Factory method to make a topology sensor.
+        Makes a sensor if passed in an TopologySensorType.
+        :param sensor: either a TopologySensorType or a TopologySensor
         """
         if isinstance(sensor, TopologySensor):
             return sensor
@@ -30,7 +37,7 @@ class DroneFactory(object):
     @staticmethod
     def make_drone(move_strategy, topology_sensors):
         """
-        Factory method to make a drone. Accepts either objects or Enums as arguments.
+        Makes a drone (factory method). Accepts either objects or Enums as arguments.
         We can use a variety of sensors, navigation strategies, and rules, and then we pass the chosen ones
         the dependencies they need,
         For example, the topology map is needed by everyone.

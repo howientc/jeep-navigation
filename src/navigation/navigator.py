@@ -1,8 +1,22 @@
-from geometry.point import Point3D, Point2D
+# -*- coding: utf-8 -*-
+"""
+The Navigator is in charge of determining where to move to. It uses the drone's sensors to fill in a topology map
+as it moves around. It has a move strategy which it uses to figure out where to go next given where it is now, and a
+Destination type which tells it if it's found its goal.
+
+It also determines which sensor to use given what needs to be scanned, and stores off tallies of the cost of scanning
+
+It furnishes its points to the jeep through a generator.
+"""
+from geometry.point import Point2D
 from topology.topology_map import TopologyMap
 import logging
 
+
 class Navigator(object):
+    """
+    The Navigator
+    """
 
     def __init__(self, topology_map, move_strategy, destination):
         """
@@ -16,37 +30,56 @@ class Navigator(object):
         self._found = None
         self._scan_costs = dict()
 
-
     @property
     def found(self):
+        """
+        :return: Point found or None if not found yet
+        """
         return self._found
 
     @property
     def scan_cost(self):
+        """
+        Calculates the total cost of all scans so far
+        :return: Number
+        """
         return sum(self._scan_costs.values())
 
     def get_scan_cost_at_point(self, point):
+        """
+        Gets the stored cost of scans at the point. Returns 0 if not scanned
+        :param point:
+        :return:
+        """
         pt = Point2D(point.x, point.y)
         cost = self._scan_costs.get(pt, 0)
         return cost
 
     def set_scan_cost_at_point(self, point, value):
+        """
+        Stores the cost for a given point. If a point has already been scanned, then it just adds the value to the
+        already stored one. In reality, that should be rare, and the second scan should have value 0
+        :param point:
+        :param value:
+        """
         pt = Point2D(point.x, point.y)
-        self._scan_costs[pt] = value
+        previous = self.get_scan_cost_at_point(point)
+        self._scan_costs[pt] = value + previous
 
     def reset(self):
         """
-        Reset the navigator. Useful when testing
+        Resets the navigator. Useful when testing
         """
         self._found = None
         self._topology_map = TopologyMap()
         self._scan_costs = dict()
 
     def set_move_strategy(self, move_strategy):
+        """
+        Sets move strategy to a new value. Useful when testing
+        :param move_strategy:
+        """
         self._move_strategy = move_strategy
-
-    # def fill_path_to_destination(self, start_point, toppology_sensors):
-    #     self._path = list(self.iter_points_to_destination(start_point, toppology_sensors))
 
     def iter_points_to_destination(self, start_point, topology_sensors):
         """
@@ -73,21 +106,9 @@ class Navigator(object):
             yield previous_point3d
             point = new_point
 
-        # point = tm.make_3d(point)
-
-        if point.z is  None:
-            print("no z at ", point)
-            print("found", self._found)
-
+        # If we found a destination, but haven't visited yet, then we need to yield it
         if point.to_2d() != previous_point3d.to_2d():
             yield point
-
-        # if point != self._found: # what we found might not have been visited yet
-        #     print("also returning fond")
-        #     yield self._found
-        # else:
-        #     print("skipping returning found", point, self._found)
-
 
     @staticmethod
     def choose_best_sensor(topology_sensors, adjacent_points):
@@ -114,6 +135,7 @@ class Navigator(object):
         if it's discovered an destination point. If so, it sets the _found member. In any case, it returns the next
         point to visit
         :param point: Point2D probably representing the current location
+        :param topology_sensors: list of sensors to use for scanning
         :return: Point2D: (Point2D where to go next/
         """
         tm = self._topology_map  # for convenience

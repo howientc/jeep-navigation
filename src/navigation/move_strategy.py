@@ -1,12 +1,25 @@
-from enum import Enum, auto
+# -*- coding: utf-8 -*-
+"""
+Move strategies are Functors (or simple functions) which given a point,  map, and destination type, will determine
+where to go next. Move strategies are the brains for the Navigator. You can imagine that we would apply different
+strategies in different situations. For example, if we're searching for high ground (extraction point), we'd be
+likely to use a strategy that is always moving to higher ground. If we're doing a search/rescue, we might want
+to spiral out from the start point to make sure we cover every square. A Navigator is free to change strategies
+at any time. It could be programmed to first do a search/rescue, and then move to high ground.
+"""
+from enum import Enum
 
 
 class MoveStrategyType(Enum):
+    """
+    Enumeration of predefined strategies. This list should grow. For example, we could have variants
+    for preferring ordinal over cardinal movements.
+    """
     CLIMB_MOVE_1 = 0
     CLIMB_3_CARDINAL_1_ORDINAL = 1
     SPIRAL_OUT_CW_3 = 2
     SPIRAL_OUT_CCW = 3
-    FIND_RIDGELINE_THEN_CLIMB_3_CARDINAL_1_ORDINAL = 4
+    # FIND_RIDGELINE_THEN_CLIMB_3_CARDINAL_1_ORDINAL = 4
 
 
 # For SpiralOutStrategy
@@ -17,13 +30,19 @@ BINARY_SEARCH_MOVE_AMOUNT = 10
 
 
 def make_move_strategy(s):
+    """
+    Makes a strategy from a strategy type. In the future, maybe create another factory method
+    with more flexible input
+    :param s: MoveStrategyType
+    :return: A functor (or function)
+    """
     if s == MoveStrategyType.CLIMB_MOVE_1:
         return ClimbStrategy("Climb Move 1", cardinal_move_amount=1, ordinal_move_amount=1)
     elif s == MoveStrategyType.CLIMB_3_CARDINAL_1_ORDINAL:
         return ClimbStrategy("Climb Move 3 card, 1 ord1", cardinal_move_amount=3, ordinal_move_amount=1)
-    elif s == MoveStrategyType.FIND_RIDGELINE_THEN_CLIMB_3_CARDINAL_1_ORDINAL:
-        return RidgelineStrategy("Ridgline", move_amount=BINARY_SEARCH_MOVE_AMOUNT,
-                                 switch_to=MoveStrategyType.CLIMB_3_CARDINAL_1_ORDINAL)
+    # elif s == MoveStrategyType.FIND_RIDGELINE_THEN_CLIMB_3_CARDINAL_1_ORDINAL:
+    #     return RidgelineStrategy("Ridgline", move_amount=BINARY_SEARCH_MOVE_AMOUNT,
+    #                                 switch_to=MoveStrategyType.CLIMB_3_CARDINAL_1_ORDINAL)
     elif s == MoveStrategyType.SPIRAL_OUT_CW_3:
         return SpiralOutStrategy("Spiral Clockwise 3", CW, 3)
     elif s == MoveStrategyType.SPIRAL_OUT_CCW:
@@ -43,7 +62,7 @@ class ClimbStrategy(object):
                  '_prefer_cardinal_to_ordinal']
 
     def __init__(self, name, cardinal_move_amount=1, ordinal_move_amount=1, prefer_moving_to_lesser_known_points=True,
-                 prefer_cardinal_to_ordinal=False):
+                 prefer_cardinal_to_ordinal=True):
         self.name = name
         self._cardinal_move_amount = cardinal_move_amount
         self._ordinal_move_amount = ordinal_move_amount
@@ -52,11 +71,11 @@ class ClimbStrategy(object):
 
     def __call__(self, topology_map, point, destination):
         """
-        Functor function: i.e. my_move_strategy(topology_map, point, directions)
-        :param topology_map: unused
+        Gets next point: Functor function: i.e. my_move_strategy(topology_map, point, directions)
+        :param topology_map: our map
         :param point: current point we're at
         :param destination: Destination object
-        :return: a list containing one element, the point to move to
+        :return: next Point to move to
         """
 
         # climb strategy wants to move up, so lets find highest points
@@ -69,7 +88,7 @@ class ClimbStrategy(object):
     def _choose_candidate_directions(self, directions):
         """
         Picks cardinal or ordinal directions depending on preferences and if there are any
-        :param directions:
+        :param directions: list of (x,y) values of the offsets around the point
         :return:
         """
         edges = edges_only(directions)
@@ -79,6 +98,14 @@ class ClimbStrategy(object):
         return corners, False
 
     def _determine_new_point(self, topology_map, point, directions, radius):
+        """
+        Determines where to go next
+        :param topology_map:
+        :param point:
+        :param directions:
+        :param radius:
+        :return:
+        """
         candidate_directions, cardinal = self._choose_candidate_directions(directions)
         move_amount = self._cardinal_move_amount if cardinal else self._ordinal_move_amount
         # let's get the points that we'd move to
@@ -97,21 +124,22 @@ class ClimbStrategy(object):
         return new_point, cardinal
 
 
-class RidgelineStrategy(object):
-    __slots__ = ['_switch_to', '_switch_to_strategy', '_move_amount']
-
-    def __init__(self, name, move_amount, switch_to):
-        self.name = name
-        self._move_amount = move_amount
-        self._switch_to = switch_to
-        self._switch_to_strategy = None
-
-    def __call__(self, topology_map, point, directions):
-        if self._switch_to_strategy:
-            return self._switch_to_strategy(topology_map, point, directions)
-
-        # TODO implement binary search and switch when ridge found
-        raise Exception("RidgelineStrategy is not implemented yet")
+# Not implemented yet
+# class RidgelineStrategy(object):
+#     __slots__ = ['name', '_switch_to', '_switch_to_strategy', '_move_amount']
+#
+#     def __init__(self, name, move_amount, switch_to):
+#         self.name = name
+#         self._move_amount = move_amount
+#         self._switch_to = switch_to
+#         self._switch_to_strategy = None
+#
+#     def __call__(self, topology_map, point, destination):
+#         if self._switch_to_strategy:
+#             return self._switch_to_strategy(topology_map, point, destination)
+#
+#         # TODO implement binary search and switch when ridge found
+#         raise Exception("RidgelineStrategy is not implemented yet")
 
 
 class SpiralOutStrategy(object):
@@ -120,13 +148,17 @@ class SpiralOutStrategy(object):
     Note that for simulated maps that have bounds, it go out of bounds if it needs to
     """
 
-    def __init__(self, name, rotation=CW, step=1):
+    def __init__(self, name, rotation, step=1):
         self.name = name
         self._rotation = list(rotation)  # get rotation as point list
         self._step = step
         self._gen = self._iter_offset()
 
     def _iter_offset(self):
+        """
+        Generates next offset values to use
+        :return:
+        """
         index = 0
         length = 1
         while True:
@@ -137,13 +169,20 @@ class SpiralOutStrategy(object):
             length += 1
 
     def __call__(self, topology_map, point, destination):
+        """
+        Gets next point (functor)
+        :param topology_map:
+        :param point:
+        :param destination:
+        :return: Next point
+        """
         offset = next(self._gen)  # get next point from generator
         return point.translate(*offset)
 
 
 def edges_only(directions):
     """
-    Given a list of directions, choose the edges (not corners)
+    Chooses edge points in directions directions
     :param directions: list of tuples (x,y)
     :return: list of tuples(x,y)
     """
@@ -152,7 +191,7 @@ def edges_only(directions):
 
 def corners_only(directions):
     """
-    Given a list of directions, choose the corners (not edges)
+    Chooses corner points in directions
     :param directions: list of tuples (x,y)
     :return: list of tuples(x,y)
     """
@@ -160,4 +199,11 @@ def corners_only(directions):
 
 
 def translate_points_by_directions(point, directions, amount):
+    """
+    Translates all points by a distance
+    :param point:
+    :param directions: list of (x,y) offsets
+    :param amount: A factor used to increase the distance
+    :return: list of new point values
+    """
     return [point.translate(amount * x, amount * y) for x, y in directions]

@@ -1,13 +1,10 @@
-import sys
-
-sys.path.extend(['.', './src', './tests', './examples'])
-
-from geometry.point import Point2D, Point3D
+# -*- coding: utf-8 -*-
+from geometry.point import Point2D
 from drone.drone_factory import DroneFactory
 from navigation.move_strategy import MoveStrategyType, make_move_strategy
 from sensors.simulated_topology_sensor import SimulatedTopologySensor
 
-from ui.plot_topology_map import plot_topology_map
+from plot_topology_map import plot_topology_map
 from tests.topology.topology_factory import TopologyFactory
 import random
 
@@ -18,7 +15,7 @@ strategies = [MoveStrategyType.CLIMB_3_CARDINAL_1_ORDINAL,
 
 class PlotPathExample(object):
     def __init__(self):
-        # random.seed(100)  # for testing, we want to always genereate same map
+        random.seed(100)  # for testing, we want to always genereate same map
         self.tm = TopologyFactory.make_fake_topology(upper_right=Point2D(32, 32))
         laser = SimulatedTopologySensor(simulated_map=self.tm, power_on_cost=4, scan_point_cost=2)
         # radar = SimulatedTopologySensor(simulated_map=self.tm, power_on_cost=10, scan_point_cost=0)
@@ -33,31 +30,23 @@ class PlotPathExample(object):
         self.strategy_index = (self.strategy_index + 1) % len(strategies)
         self.move_strategy = strategies[self.strategy_index]
 
-
     def navigate(self, x, y, change_strategy=False):
         if change_strategy:
             if not self.last_xy:
                 return None
-            (x,y) = self.last_xy
+            (x, y) = self.last_xy
         else:
-            self.last_xy = (x,y)
+            self.last_xy = (x, y)
 
         nav = self.drone.navigator
         if change_strategy:
             self.strategy_change()
 
         nav.set_move_strategy(make_move_strategy(self.move_strategy))  # need to reset between runs
-        path = list(self.drone.navigate_to_extraction_point(Point2D(x, y)))
-        found = nav.found
-        # path.append(Point3D(found.x, found.y, 100))
+        path = list(self.drone.navigate_to_destination_point(Point2D(x, y)))
         points = [(pt.x, pt.y, pt.z, nav.get_scan_cost_at_point(pt)) for pt in
                   path]  # convert from Point3D list to tuple list
         return points, self.move_strategy.name
 
     def run(self):
         plot_topology_map(self.tm, lambda x, y, c: self.navigate(x, y, c))
-
-
-if __name__ == '__main__':
-    example = PlotPathExample()
-    example.run()

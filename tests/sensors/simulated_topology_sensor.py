@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from sensors.topology_sensor import TopologySensor
 
 

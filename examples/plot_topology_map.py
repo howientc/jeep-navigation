@@ -1,3 +1,11 @@
+# -*- coding: utf-8 -*-
+"""
+Plot a TopologyMap and path using matpyplot. This is a bit unpolished:
+- Font sizes not always good
+- Text could use nicer formatting and positioning,
+- I am not sure how to get rid of the defaut toolbar
+
+"""
 import matplotlib.pyplot as plt
 import numpy as np
 import math
@@ -7,6 +15,10 @@ FONT_SIZE = 40
 
 
 class MyFigure(Figure):
+    """
+    Based on an example. Used to make custom title
+    """
+
     def __init__(self, *args, **kwargs):
         """
         custom kwarg figtitle is a figure title
@@ -18,9 +30,13 @@ class MyFigure(Figure):
 
 def plot_topology_map(topology_map, func_get_path):
     """
-    Plots the map with color coding for heights
+    Plots the map with color coding for heights, and the path drawn.
+    The func_get_path is how the plot interacts with its creator. Basically, func_get_path has the signature
+    list(x,y,z, cost) func_get_path(x,y, bool=switch_strategy). When called, the creator will populate the
+    list with values used for drawing the path
     :param topology_map:
-    :return:
+    :param func_get_path: the callback function
+    a path of points.
     """
 
     plt.rcParams.update({'font.size': FONT_SIZE * 0.6})
@@ -37,8 +53,8 @@ def plot_topology_map(topology_map, func_get_path):
         grid[normalized_y, normalized_x] = z  # grid is indexed by rows(y) first, not columns(x)
 
     figtitle = "Path is numbered in order of visitation. From white square to red triangle\n" \
-    "The triangle will have red text if it didn't need to be scanned\n" \
-    "Press the space bar to cycle through strategies, or click a new point"
+               "The triangle will have red text if it didn't need to be scanned\n" \
+               "Press the space bar to cycle through strategies, or click a new point"
 
     fig = plt.figure(FigureClass=MyFigure, figtitle=figtitle)
     ax = fig.subplots()
@@ -48,8 +64,13 @@ def plot_topology_map(topology_map, func_get_path):
     extent = (lower_left.x - .5, upper_right.x + .5, lower_left.y - .5, upper_right.y + .5)
     ax.imshow(grid, origin='lower', extent=extent)
 
-
     def draw_path(path):
+        """
+        Draws the path. This consists of drawing the endpoints and numbering each cell in the path.
+        Also, it indicates cells where a scan was done by making the font color blue for scanned cells,
+        otherwise white.
+        :param path: list of (x,y,z, scan_cost)
+        """
         font_size = FONT_SIZE // 2
         symbol_size = FONT_SIZE * 0.75
         # Plot start point
@@ -65,16 +86,27 @@ def plot_topology_map(topology_map, func_get_path):
             color = "blue" if point[3] else "white"  # scanned here
             plt.text(point[0] - offset, point[1] - offset, str(i), color=color, fontsize=FONT_SIZE // 2)
 
-
-    def replot(cx, cy, change=False):
+    def replot(cx, cy, change_strategy=False):
+        """
+        Queries for new data and plots it. If change_strategy is True, the creator will populate the new path
+        using a different strategy, but the same points as before. If it's False, then the current strategy
+        will be used for the new point
+        :param cx: new starting x
+        :param cy: new starting y
+        :param change_strategy: True if change strategy. If so, x,y are ignored
+        :return:
+        """
         plt.cla()
         ax.imshow(grid, origin='lower', extent=extent)
 
-        path, strategy_name = func_get_path(cx, cy, change)  # get a new path from the click origin
+        # Ask our creator for get a new path from the click origin, or with new strategy
+        path, strategy_name = func_get_path(cx, cy, change_strategy)
         if not path:
-            return
+            return  # To handle case where we've changed strategy but have no point yet
+
         draw_path(path)
 
+        # Calculate cost/scan values from the cost element of the tuple (x,y,z, cost)
         cost = 0
         scans = 0
         for p in path:
@@ -87,31 +119,37 @@ def plot_topology_map(topology_map, func_get_path):
 
         fig.canvas.draw()
 
-
     def on_click(event):
-        if not event.xdata or not event.ydata:
+        """
+        Handles clicks on cells by replotting new path
+        :param event:
+        """
+        if not event.xdata or not event.ydata:  # if not clicked on a cell
             return
         # get closes integer points
         cx = math.floor(round(event.xdata))
         cy = math.floor(round(event.ydata))
         replot(cx, cy)
 
-
-    cid = fig.canvas.mpl_connect('button_press_event', on_click)
+    _cid = fig.canvas.mpl_connect('button_press_event', on_click)
 
     def on_key(event):
-        if event.key ==' ':
+        """
+        Handles keyboard events - spacebar will replot with new strategy
+        :param event:
+        :return:
+        """
+        if event.key == ' ':
             replot(0, 0, True)
 
-    cid = fig.canvas.mpl_connect('key_press_event', on_key)
+    _cid = fig.canvas.mpl_connect('key_press_event', on_key)
 
     plt.title("Click a point to navigate from it to high ground")
-    # plt.legend("BLue text = a scan was done at that spot")
     fig.canvas.set_window_title("Plot Path Example")
 
     # make window big
     mng = plt.get_current_fig_manager()
-    mng.resize(*mng.window.maxsize())
+    if hasattr(mng, 'window'):
+        mng.resize(*mng.window.maxsize())
 
     plt.show()
-    # I am not sure how to get rid of that toolbar

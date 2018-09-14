@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import random
 from unittest import TestCase
 import logging
@@ -43,17 +44,15 @@ class TestDrone(TestCase):
         """
         logging.getLogger().setLevel(level=logging.INFO)
 
-        self.drone.navigate_to_extraction_point(Point2D(10, 10))
+        self.drone.navigate_to_destination_point(Point2D(10, 10))
         self.assertEqual(1, len(self.start))
         self.assertEqual(1, len(self.destination))
         extraction_point = self.destination[0].to_2d()
-        self.assertTrue(self.tm.is_highest_or_tie_in_radius(extraction_point, 1))
+        self.assertTrue(self.tm.is_highest_or_tie_in_radius_and_all_known(extraction_point, 1))
 
     def navigate(self, x, y):
-        self.drone.navigate_to_extraction_point(Point2D(x, y))
+        self.drone.navigate_to_destination_point(Point2D(x, y))
         path = self.drone.navigator.path
-        found = self.drone.navigator.found
-        # path.append(Point3D(found.x, found.y, 100))
         points = [pt.to_tuple() for pt in path]  # convert from Point3D list to tuple list
         print("Found destination at", path[-1])
         print(*points)
@@ -69,5 +68,4 @@ class TestDrone(TestCase):
         # move_strategy = MoveStrategyType.SPIRAL_OUT_CW
         self.drone = DroneFactory.make_drone(move_strategy=move_strategy,
                                              topology_sensors=topology_sensors)
-        self.navigate(20,19)
-
+        self.navigate(20, 19)

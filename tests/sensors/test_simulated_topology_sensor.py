@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import unittest
 from tests.sensors.simulated_topology_sensor import SimulatedTopologySensor
 from tests.topology.topology_factory import TopologyFactory

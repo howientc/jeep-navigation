@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import unittest
 from tests.topology.test_topology_map import make_example_topology
 

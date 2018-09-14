@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Functors which serve to return whether a point on a map is a destination (e.g. extraction point). The functors
+also have a radius_needed_to_check property which gives the radius of points that need to be scanned for the
+functor's function (__call__) to be able to be evaluated
+"""
+
 from abc import ABC, abstractmethod
 
 
@@ -21,8 +28,12 @@ class ExtractionPoint(Destination):
     This is a functor method
     """
     def __call__(self, topology_map, point):
-        return topology_map.is_highest_or_tie_in_radius(point, self.radius_needed_to_check)
+        return topology_map.is_highest_or_tie_in_radius_and_all_known(point, self.radius_needed_to_check)
 
     @property
     def radius_needed_to_check(self):
-        return 1  # need 1 point in all directions around the given point
+        """
+        Gets radius. Extraction point test checks 1 point on all sides of a given point, so radius =1
+        :return:
+        """
+        return 1

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from unittest import TestCase
 from topology.topology_map import TopologyMap, OUT_OF_BOUNDS
 from geometry.point import Point2D, ORIGIN

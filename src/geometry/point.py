@@ -1,12 +1,17 @@
+# -*- coding: utf-8 -*-
+"""
+Simple immutable, hashable Point2D and Point3D classes
+For purposes of this exercise, I am writing it myself, though in reality, the "Jeep" project
+should use a geometry library, such as https://docs.sympy.org/latest/modules/geometry/index.html
+Note that because of this, I'm keeping things simple and not bothering to write test cases. The code
+is pretty trivial.
+"""
 import math
 
 
 class Point2D(object):
     """
-    immutable point class
-    For purposes of this exercise, I am writing it myself, though in reality, the "Jeep" project
-    should use a geometry library, such as https://docs.sympy.org/latest/modules/geometry/index.html
-    Note that because of this, I'm keeping it small and not bothering to write test cases
+    immutable 2D point class
     """
 
     def __init__(self, x, y):
@@ -53,6 +58,9 @@ ORIGIN = Point2D(0, 0)
 
 
 class Point3D(Point2D):
+    """
+    immutable 3D point class
+    """
 
     def __init__(self, x, y, z):
         super().__init__(x, y)

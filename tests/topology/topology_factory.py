@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from topology.topology_map import TopologyMap
 from geometry.point import Point2D, Point3D, ORIGIN
 import random

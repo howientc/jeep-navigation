@@ -1,6 +1,7 @@
+# -*- coding: utf-8 -*-
 from unittest import TestCase
 
-from ui.plot_topology_map import plot_topology_map
+from plot_topology_map import plot_topology_map
 from tests.topology.topology_factory import TopologyFactory
 import random
 

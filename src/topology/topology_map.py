@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+"""
+A TopologyMap is essentially like a real topology map. Think of it as a piece of graph paper, in which every known
+cell has a height value. The Navigator draws values in the cells as it uses scanners.
+"""
 from geometry.point import Point2D, Point3D
 
 OUT_OF_BOUNDS = float("-inf")
@@ -6,13 +11,13 @@ NO_BOUNDS = float("inf")
 
 class TopologyMap(object):
     """
-    A map of the world as the drone sees it. Basically, it keeps track of all of the areas where it's
+    The map keeps track of all of the areas where it's
     already been. This helps us avoid rescanning areas that we've already scanned. Currently this
-    map is regenerated every time the drone is used. In the future, we can persist and then it can
+    map is regenerated every run. In the future, we can persist and then it can
     be used by any drone on a mission to the area. We could also persist the extraction points that
-    have been discovered. That way we can have a rule that routes drones to the closest extraction
-    point if it's within a certain threshold. That threshold could be determined by seeing if we have enough
-    power to drive to the point.
+    have been discovered.
+
+    This class contains many small helper methods for querying and generating points in a radius around a given point.
     """
 
     __slots__ = ['_known_z', '_lower_left', '_upper_right', '_lower_left_bounds', '_upper_right_bounds']
@@ -59,7 +64,6 @@ class TopologyMap(object):
         Sets z value at a point to the passed height
         :param point:
         :param height:
-        :return:
         """
         self._known_z[point] = height
 
@@ -98,72 +102,65 @@ class TopologyMap(object):
     def iter_all_points_xyz(self):
         """
         Generates all of the known points in the map as x,y,z in no specific order
-        :return:
+        :return: generator yielding x,y,z
         """
         return ((pt.x, pt.y, z) for pt, z in self._known_z.items())
 
-    # def count_unknown_points_at_and_adjacent_to_point(self, point, radius=1):
-    #     """
-    #     Counts how many unknown cells are around the point for the given radius
-    #     :param radius:
-    #     :param point:
-    #     :return:
-    #     """
-    #     return sum(z is None for _x, _y, z, _pt in self.iter_self_and_adjacent_points(point, radius))
-    #
-    # def is_point_and_adjacent_fully_known(self, point):
-    #     return self.count_unknown_points_at_and_adjacent_to_point(point) == 0
-    #
-    # def iter_offsets_around_point(self, point, offsets):
-    #     """
-    #     Generates adjacent points for each offset in cells
-    #     :param point: The reference point
-    #     :param offsets: A list containing (x,y) offsets from the point
-    #     :return: generator yielding x,y,z,pt
-    #     """
-    #     for (x, y) in offsets:
-    #         pt = point.translate(x, y)
-    #         z = self._known_z.get(pt)
-    #         yield x, y, z, pt
-
-    def iter_x_y_z_pt_in_radius(self, point, radius=1):
+    def iter_x_y_z_pt_in_radius(self, point, radius):
         """
-        Walks all adjacent cells (excludes center)
+        Generates all points in radius, known or not
         :param radius:
         :param point: center point
         :return: generator yielding x, y, z, pt
         """
-        point.translate(0,2)
+        point.translate(0, 2)
         for (x, y) in iter_x_y_in_radius(radius):
             pt = point.translate(x, y)
             z = self._known_z.get(pt)
             yield x, y, z, pt
 
-    def count_unknown_in_radius(self, point, radius=1):
-        return len(self.list_unknown_x_y_in_radius(point, radius))
-
-    def list_unknown_x_y_in_radius(self, point, radius=1):
-        return [(x, y) for x, y, _pt in self.iter_unknown_x_y_pt_in_radius(point, radius)]
-
-    def iter_unknown_x_y_pt_in_radius(self, point, radius=1):
+    def count_unknown_in_radius(self, point, radius):
         """
-        Gets offsets to all unknown cells within a radius of point.
+        Calculates how many points we've not seen yet in a radius out from this point
         :param point:
         :param radius:
-        :return:
+        :return: number of points unknown
+        """
+        return len(self.list_unknown_x_y_in_radius(point, radius))
+
+    def list_unknown_x_y_in_radius(self, point, radius):
+        """
+        :param point:
+        :param radius:
+        :return: list of unknown points
+        """
+        return [(x, y) for x, y, _pt in self.iter_unknown_x_y_pt_in_radius(point, radius)]
+
+    def iter_unknown_x_y_pt_in_radius(self, point, radius):
+        """
+        Generates x,y,pt to all unknown cells within a radius of point.
+        :param point:
+        :param radius:
+        :return: generator of x,y,z point
         """
         return ((x, y, pt) for x, y, known, pt in self.iter_x_y_z_pt_in_radius(point, radius) if not known)
 
-    def iter_known_x_y_z_pt_in_radius(self, point, radius=1):
+    def iter_known_x_y_z_pt_in_radius(self, point, radius):
         """
-        Gets offsets to all unknown cells within a radius of point.
+        Generates x,y,z,pt for unknown cells within a radius of point.
         :param point:
         :param radius:
-        :return:
+        :return: Generator x,y,z,pt
         """
         return ((x, y, z, pt) for x, y, z, pt in self.iter_x_y_z_pt_in_radius(point, radius) if z)
 
-    def list_highest_x_y_z_pt_in_radius(self, point, radius=1):
+    def list_highest_x_y_z_pt_in_radius(self, point, radius):
+        """
+        Gets a list of the point or points in the radius having the maximal height value in the area within the radius
+        :param point:
+        :param radius:
+        :return: list of highest points
+        """
         # Figure out the max height by walking adjacent points and maxing on the z value
         known = list(self.iter_known_x_y_z_pt_in_radius(point, radius))
         if not known:
@@ -175,7 +172,7 @@ class TopologyMap(object):
         # Now get the highest adjacent offsets as (x,y) tuples
         return [(x, y, z, pt) for (x, y, z, pt) in known if z == max_z]
 
-    def is_highest_or_tie_in_radius(self, point, radius=1):
+    def is_highest_or_tie_in_radius_and_all_known(self, point, radius):
         """
         Sees if the point is equal or higher than all points adjacent to it on the condition
         that all of the adjacent points have already been scanned
@@ -191,91 +188,13 @@ class TopologyMap(object):
                 return True
         return False
 
-    # def iter_adjacent_points(self, point, radius=1):
-    #     """
-    #     Walks all adjacent cells (excludes center)
-    #     :param radius:
-    #     :param point: center point
-    #     :return: generator yielding x, y, z, pt
-    #     """
-    #     return self.iter_offsets_around_point(point, iter_adjacent_offsets_in_radius(radius))
-    #
-    # def unknown_adjacent_offsets(self, point, radius=1):
-    #     """
-    #     Gets offsets to all unknown cells around a point.
-    #     :param point:
-    #     :param radius:
-    #     :return:
-    #     """
-    #     # TODO get rid of this
-    #     return [(x, y) for x, y, known, pt in self.iter_adjacent_points(point, radius) if not known]
-    #
-    # def unknown_adjacent_points(self, point, radius=1):
-    #     """
-    #     Gets points for all unknown points around a point.
-    #     :param point:
-    #     :param radius:
-    #     :return:
-    #     """
-    #     return [pt for x, y, known, pt in self.iter_adjacent_points(point, radius) if not known]
-    #
-    # def iter_self_and_adjacent_points(self, point, radius=1):
-    #     """
-    #     Walks all adjacent cells (includes center)
-    #     :param radius:
-    #     :param point: center point
-    #     :return: generator yielding x, y, z, pt
-    #     """
-    #     return self.iter_offsets_around_point(point, iter_offsets_in_radius(radius))
-    #
-    # def is_highest_of_adjacent_points(self, point, radius=1):
-    #     """
-    #     Sees if the point is equal or higher than all points adjacent to it on the condition
-    #     that all of the adjacent points have already been scanned
-    #     :param radius:
-    #     :param point:
-    #     :return: True if the point is highest (or tied), False if not, or not all of the adjacent
-    #     points are known
-    #     """
-    #     center_z = self._known_z.get(point)
-    #     if not center_z:
-    #         return False
-    #
-    #     for x, y, z, pt in self.iter_adjacent_points(point, radius):
-    #         if not z or z > center_z:
-    #             return False
-    #     return True
-    #
-    # def get_highest_adjacent_offsets(self, point, radius=1):
-    #     """
-    #     Figures out the list of highest points around a given point
-    #     :param radius:
-    #     :param point:
-    #     :return: list of points
-    #     """
-    #     # Figure out the max height by walking adjacent points and maxing on the z value
-    #     highest_adjacent = max(z for (_x, _y, z, _pt) in self.iter_adjacent_points(point, radius))
-    #
-    #     # Now get the highest adjacent offsets as (x,y) tuples
-    #     candidates = [(x, y) for (x, y, z, _pt) in self.iter_adjacent_points(point) if
-    #                   z == highest_adjacent]  # array of tuples x,y
-    #     return candidates
 
-
-def iter_x_y_in_radius(radius=1):
+def iter_x_y_in_radius(radius):
     """
-    Convenience method to walk through all cells in a given radius
+    Generates all cells in a given radius
     :param radius:
     :return: yields x,y offsets from the center
     """
     size = range(-radius, radius + 1)
     return ((x, y) for y in size for x in size)
 
-#
-# def iter_adjacent_offsets_in_radius(radius=1):
-#     """
-#     Convenience method to walk through all cells in a given radius, excluding the center
-#     :param radius:
-#     :return: yields x,y offsets from the center
-#     """
-#     return ((x, y) for (x, y) in iter_offsets_in_radius(radius) if x != 0 or y != 0)

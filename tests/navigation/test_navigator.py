@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from unittest import TestCase
 from tests.sensors.simulated_topology_sensor import SimulatedTopologySensor
 from navigation.navigator import Navigator
