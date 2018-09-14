@@ -70,6 +70,12 @@ the highest, you need to use a tiebreak to figure out which way to move. Maybe y
 
 So how much should you move?
 
+
+#### observations
+ordinal moves are much more likely than cardinal in real-world data. This is because slopes
+are much larger than cells.
+
+
 #### Naive move 1 strategy
 A naive strategy is to move one unit in the direction (diagonal would be moving both x and y). While this is conceptually simple, it would mean lots of
 unpacking/callibrating/repacking of the equipment.
@@ -101,7 +107,13 @@ You could at least say that if an edge and a corner are tied for highest, prefer
 Optimizing diagonal movement is tricky because we could miss an extraction point if we don't check all possibilities
 surrounding the point. We could always visit cardinal points, but that might be more costly
 
+### MOve big then  decrease
+
+### Just look at midpoints. go big distances at first and binary earch back
+
 #### Advanced Heuristics
+
+
 As it turns out, real-world topology isn't a bunch of random points. It's likely made up of slopes which end in peaks before going
 down the other side. Suppose we're hiking and climbing a peak, we'd walk until we hit a ridge line, and then walk up that ridge line until we
 hit a spot higher than its surroundings. This would either be the main peak, or an "extraction point". This works for us because
