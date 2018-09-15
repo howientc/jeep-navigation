@@ -36,7 +36,7 @@ class TopologyFactory(object):
         return tm
 
     @staticmethod
-    def make_fake_topology(density=.03, lower_left=ORIGIN, upper_right=Point2D(30, 30), max_z=None):
+    def make_fake_topology(density=.02, lower_left=ORIGIN, upper_right=Point2D(30, 30), max_z=None):
         """
         Generates a topology to test with. It's possible that the resulting topology could have more "extraction points"
         (peaks or flat areas) than the number of seeds because of the way the generated peaks collide.

@@ -11,7 +11,7 @@ import numpy as np
 import math
 from matplotlib.figure import Figure
 
-FONT_SIZE = 40
+FONT_SIZE = 20
 
 
 class MyFigure(Figure):
@@ -25,7 +25,7 @@ class MyFigure(Figure):
         """
         figtitle = kwargs.pop('figtitle', 'hi mom')
         Figure.__init__(self, *args, **kwargs)
-        self.text(0.5, 0.95, figtitle, ha='center')
+        self.text(0.5, 0.95, figtitle, ha='center', va='bottom', fontsize=FONT_SIZE * 0.5)
 
 
 def plot_topology_map(topology_map, func_get_path):
@@ -68,11 +68,12 @@ def plot_topology_map(topology_map, func_get_path):
         """
         Draws the path. This consists of drawing the endpoints and numbering each cell in the path.
         Also, it indicates cells where a scan was done by making the font color blue for scanned cells,
-        otherwise white.
+        otherwise white. Currently it may glitch of drawing a point outside our range. For now, I'm
+        not worring about it
         :param path: list of (x,y,z, scan_cost)
         """
         font_size = FONT_SIZE // 2
-        symbol_size = FONT_SIZE * 0.75
+        symbol_size = font_size * 0.75
         # Plot start point
         start_x, start_y, start_z, start_cost = path[0]
         plt.plot(start_x, start_y, 'wo', markersize=symbol_size)  # start is a white circle
@@ -84,7 +85,7 @@ def plot_topology_map(topology_map, func_get_path):
         offset = .2
         for i, point in enumerate(path):
             color = "blue" if point[3] else "white"  # scanned here
-            plt.text(point[0] - offset, point[1] - offset, str(i), color=color, fontsize=FONT_SIZE // 2)
+            plt.text(point[0] - offset, point[1] - offset, str(i), color=color, fontsize=font_size)
 
     def replot(cx, cy, change_strategy=False):
         """
@@ -151,5 +152,4 @@ def plot_topology_map(topology_map, func_get_path):
     mng = plt.get_current_fig_manager()
     if hasattr(mng, 'window'):
         mng.resize(*mng.window.maxsize())
-
     plt.show()

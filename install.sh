@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-python -mpip install -U pip
-python -mpip install --user -U matplotlib
-sudo apt-install python3-tk
-pip3 install --user PyDispatcher
+# installs dependencies for examples in project
+sudo apt-get install python3-tk python3-pip
+pip3 install --user PyDispatcher matplotlib

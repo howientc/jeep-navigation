@@ -7,7 +7,9 @@ likely to use a strategy that is always moving to higher ground. If we're doing 
 to spiral out from the start point to make sure we cover every square. A Navigator is free to change strategies
 at any time. It could be programmed to first do a search/rescue, and then move to high ground.
 """
+import math
 from enum import Enum
+from geometry.point import Point2D
 
 
 class MoveStrategyType(Enum):
@@ -19,14 +21,14 @@ class MoveStrategyType(Enum):
     CLIMB_3_CARDINAL_1_ORDINAL = 1
     SPIRAL_OUT_CW_3 = 2
     SPIRAL_OUT_CCW = 3
-    # FIND_RIDGELINE_THEN_CLIMB_3_CARDINAL_1_ORDINAL = 4
+    BINARY_SEARCH = 4
 
 
 # For SpiralOutStrategy
 CCW = [(0, 1), (-1, 0), (0, -1), (1, 0)]  # Counter-clockwise rotation
 CW = CCW[::-1]  # Clockwise rotation
 
-BINARY_SEARCH_MOVE_AMOUNT = 10
+BINARY_SEARCH_MOVE_AMOUNT = 6
 
 
 def make_move_strategy(s):
@@ -40,9 +42,12 @@ def make_move_strategy(s):
         return ClimbStrategy("Climb Move 1", cardinal_move_amount=1, ordinal_move_amount=1)
     elif s == MoveStrategyType.CLIMB_3_CARDINAL_1_ORDINAL:
         return ClimbStrategy("Climb Move 3 card, 1 ord1", cardinal_move_amount=3, ordinal_move_amount=1)
-    # elif s == MoveStrategyType.FIND_RIDGELINE_THEN_CLIMB_3_CARDINAL_1_ORDINAL:
-    #     return RidgelineStrategy("Ridgline", move_amount=BINARY_SEARCH_MOVE_AMOUNT,
-    #                                 switch_to=MoveStrategyType.CLIMB_3_CARDINAL_1_ORDINAL)
+    elif s == MoveStrategyType.BINARY_SEARCH:
+        return BinarySearchStrategy("Binary Search", cardinal_move_amount=BINARY_SEARCH_MOVE_AMOUNT,
+                                    ordinal_move_amount=BINARY_SEARCH_MOVE_AMOUNT,
+                                    cardinal_range=range(BINARY_SEARCH_MOVE_AMOUNT, 3, -1),
+                                    ordinal_range=range(BINARY_SEARCH_MOVE_AMOUNT, 1, -1)
+                                    )
     elif s == MoveStrategyType.SPIRAL_OUT_CW_3:
         return SpiralOutStrategy("Spiral Clockwise 3", CW, 3)
     elif s == MoveStrategyType.SPIRAL_OUT_CCW:
@@ -114,32 +119,67 @@ class ClimbStrategy(object):
         # sort candidate points by how well we know the points around them
         sorted_move_points = sorted(move_points,
                                     key=lambda pt: topology_map.count_unknown_in_radius(pt, radius))
+
         # pick least or most known point, based on our preference
         if not sorted_move_points:
-            print(*directions)
-            print(*candidate_directions)
-            print(*move_points)
-            assert False
-        new_point = sorted_move_points[-1] if self._prefer_moving_to_lesser_known_points else sorted_move_points[0]
+            new_point = point  # just in case this ever happens, pick same point and fix below
+        else:
+            new_point = sorted_move_points[-1] if self._prefer_moving_to_lesser_known_points else sorted_move_points[0]
+
+        # Handle special case of moving back to a known point. For now, pick a simple rule to move perpendicularly
+        # one square, either up or down. This can be improved, but it's not so common so optimize later
+        while topology_map.count_unknown_in_radius(new_point, radius) == 0:  # if next point is already visited
+            perp = ((point.y - new_point.y) // move_amount, (point.x - new_point.x) // move_amount)
+            new_point = new_point.translate(*perp)
         return new_point, cardinal
 
 
-# Not implemented yet
-# class RidgelineStrategy(object):
-#     __slots__ = ['name', '_switch_to', '_switch_to_strategy', '_move_amount']
-#
-#     def __init__(self, name, move_amount, switch_to):
-#         self.name = name
-#         self._move_amount = move_amount
-#         self._switch_to = switch_to
-#         self._switch_to_strategy = None
-#
-#     def __call__(self, topology_map, point, destination):
-#         if self._switch_to_strategy:
-#             return self._switch_to_strategy(topology_map, point, destination)
-#
-#         # TODO implement binary search and switch when ridge found
-#         raise Exception("RidgelineStrategy is not implemented yet")
+class BinarySearchStrategy(ClimbStrategy):
+    """
+    A strategy that starts off with big steps. If it detects it went the wrong way, it moves halfway back
+    to the known highest point. Otherwise, it uses the default base class movement. With each step, it reduces
+    how much it moves by one. This strategy is good for maps with very few destnation points. It can be tuned
+    according to the bumpiness of the terrain. Smoother terrain should have large initial steps
+    """
+    __slots__ = ['highest_point', 'amount_range', 'cardinal_range', 'ordinal_range']
+
+    def __init__(self, *args, **kwargs):
+        self.cardinal_range = kwargs.pop('cardinal_range')  # range of move_amounts
+        self.ordinal_range = kwargs.pop('ordinal_range')  # range of move_amounts
+        super().__init__(*args, **kwargs)
+        self.highest_point = None
+
+    def _decrement(self):
+        """
+        Decreases our move amounts. For now, just subtract 1 and stay in range
+        """
+        if self._cardinal_move_amount in self.cardinal_range:
+            self._cardinal_move_amount -= 1
+        if self._ordinal_move_amount in self.ordinal_range:
+            self._ordinal_move_amount -= 1
+
+    def __call__(self, topology_map, point, destination):
+        """
+        Determne next point by bisecting towards it in decreasing increments
+        :param topology_map:
+        :param point:
+        :param destination:
+        :return:
+        """
+        next_point = super().__call__(topology_map, point, destination)
+        self._decrement()
+
+        if self.highest_point:
+            # see if if we moved downhill last time
+            if topology_map.get_z(self.highest_point) > topology_map.get_z(point):
+                # we went downhill, so bisect back to high point
+                midpoint = point.midpoint_to(self.highest_point)
+                return Point2D(math.floor(midpoint.x), math.floor(midpoint.y))
+            else:
+                self.highest_point = point  # this point is new high
+        else:
+            self.highest_point = point  # initialize now that we have a point
+        return next_point
 
 
 class SpiralOutStrategy(object):

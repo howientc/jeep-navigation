@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from sensors.topology_sensor import TopologySensor
+from topology.topology_map import OUT_OF_BOUNDS
 
 
 class SimulatedTopologySensor(TopologySensor):
@@ -25,6 +26,8 @@ class SimulatedTopologySensor(TopologySensor):
         for x, y in offsets:
             point = home_point.translate(x, y)
             z = self._simulated_map.get_z(point)
+            if not z:  # if off map, we still need to fill in a value
+                z = OUT_OF_BOUNDS
             scanned_points.append((x, y, z, point))
 
         self._scan_point_count += len(scanned_points)

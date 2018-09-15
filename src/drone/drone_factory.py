@@ -35,12 +35,13 @@ class DroneFactory(object):
         raise KeyError("Unknown Sensor Type: " + str(sensor))
 
     @staticmethod
-    def make_drone(move_strategy, topology_sensors):
+    def make_drone(move_strategy, topology_sensors, destination=ExtractionPoint()):
         """
         Makes a drone (factory method). Accepts either objects or Enums as arguments.
         We can use a variety of sensors, navigation strategies, and rules, and then we pass the chosen ones
         the dependencies they need,
         For example, the topology map is needed by everyone.
+        :param destination: The Destination we're looking for, such as an ExtractionPoint
         :param move_strategy: either a MoveStrategy, a function, or Enum NavigationStrategyType
         :param topology_sensors: a list containing elements of either TopologySensor, or Enum TopologySensorType
         :return:
@@ -53,7 +54,6 @@ class DroneFactory(object):
         # convert the passed-in sensor list to actual sensors in case enums were passed in
         sensors = [s if isinstance(s, TopologySensor) else DroneFactory.make_sensor(s) for s in topology_sensors]
 
-        destination = ExtractionPoint()
         navigator = NavigatorFactory.make_navigator(topology_map=topology_map,
                                                     move_strategy=move_strategy,
                                                     destination=destination)

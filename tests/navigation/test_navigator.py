@@ -47,10 +47,9 @@ class TestNavigator(TestCase):
 
     def test_determine_next_point(self):
         point = Point2D(4, 1)
-        point, done = self.navigator._determine_next_point(point, self.sensors)
+        point = self.navigator._determine_next_point(point, self.sensors)
         expecting = Point2D(3, 2)
         self.assertEqual(expecting, point)
-        self.assertFalse(done)
 
     def test_iter_points_to_destination(self):
         point = Point2D(4, 1)

@@ -149,6 +149,7 @@ class Navigator(object):
                 return self._found
 
         next_point = self._move_strategy(tm, point, self._destination)
+
         return next_point
 
     def _scan_and_get_destination_point_candidates(self, point, topology_sensors):
@@ -188,5 +189,5 @@ class Navigator(object):
             # that this radius is our sensor's radius + our destination radius
             candidate_radius = sensor.radius + self._destination.radius_needed_to_check
         else:
-            logging.warning("No unknown points found for point", point)
+            logging.info("No unknown points found for point %s", point)
         return [pt for _x, _y, _z, pt in tm.iter_x_y_z_pt_in_radius(point, radius=candidate_radius)]

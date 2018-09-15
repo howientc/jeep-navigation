@@ -1,4 +1,9 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/python3
+#  -*- coding: utf-8 -*-
+# Sets the python path first in case PYTHONPATH isn't correct
+import sys
+sys.path.extend(['.', './src', './tests', './examples'])
+
 from geometry.point import Point2D
 from drone.drone_factory import DroneFactory
 from navigation.move_strategy import MoveStrategyType, make_move_strategy
@@ -6,17 +11,20 @@ from sensors.simulated_topology_sensor import SimulatedTopologySensor
 
 from plot_topology_map import plot_topology_map
 from tests.topology.topology_factory import TopologyFactory
-import random
+# import random
 
-strategies = [MoveStrategyType.CLIMB_3_CARDINAL_1_ORDINAL,
+strategies = [
+              MoveStrategyType.CLIMB_3_CARDINAL_1_ORDINAL,
               MoveStrategyType.CLIMB_MOVE_1,
-              MoveStrategyType.SPIRAL_OUT_CW_3]
+              MoveStrategyType.BINARY_SEARCH,
+              # MoveStrategyType.SPIRAL_OUT_CW_3
+              ]
 
 
-class PlotPathExample(object):
+class InteractiveSimulatorExample(object):
     def __init__(self):
-        random.seed(100)  # for testing, we want to always genereate same map
-        self.tm = TopologyFactory.make_fake_topology(upper_right=Point2D(32, 32))
+        # random.seed(100)  # for testing, we want to always genereate same map
+        self.tm = TopologyFactory.make_fake_topology(upper_right=Point2D(48, 32), density=0.0075)
         laser = SimulatedTopologySensor(simulated_map=self.tm, power_on_cost=4, scan_point_cost=2)
         # radar = SimulatedTopologySensor(simulated_map=self.tm, power_on_cost=10, scan_point_cost=0)
         topology_sensors = [laser]
@@ -50,3 +58,8 @@ class PlotPathExample(object):
 
     def run(self):
         plot_topology_map(self.tm, lambda x, y, c: self.navigate(x, y, c))
+
+
+if __name__ == '__main__':
+    example = InteractiveSimulatorExample()
+    example.run()
